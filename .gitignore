@@ -1,0 +1,32 @@
+# Local dependencies and build outputs
+git-state/
+node_modules/
+dist/
+*.tsbuildinfo
+work/detector-test/
+work/voice-tools/
+work/voice-check.mp3
+work/gh-tools.zip
+work/gh-tools/
+work/gh-config/
+work/github-proxy.js
+work/upload-github.mjs
+
+# Local service sessions, caches and deployment logs
+.cloudbase-config/
+.config/
+.netlify-appdata/
+.npm-cache/
+cloudbase-framework/
+outputs/
+
+# Local secrets and editor files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

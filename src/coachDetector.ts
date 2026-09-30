@@ -12,7 +12,7 @@ export const cues = {
   unclear: '刚才没看清，这次先不评价。调整一下位置吧。',
   incomplete: '先回到站立，再开始下一次，不着急。',
 }
-export type RepRecord = { durationMs: number; minAngle: number; valid: boolean; issue: 'shallow' | 'fast' | null }
+export type RepRecord = { durationMs: number; minAngle: number; valid: boolean; issue: 'shallow' | 'fast' | null; side?: 'left' | 'right' }
 /** Estimates visible range and tempo only, not full form or medical safety. */
 export class SquatDetector {
   private phase: SquatPhase = 'WAITING'

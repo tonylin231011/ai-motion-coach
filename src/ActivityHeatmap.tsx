@@ -21,7 +21,7 @@ export const ActivityHeatmap=memo(function ActivityHeatmap({sessions}:{sessions:
     <div className="day-detail" aria-live="polite"><strong>{selected} · {detail ? `${detail.sessions.length} 组 · ${duration(detail.durationMs)}` : '暂无运动记录'}</strong>
       {Object.entries(EXERCISE_NAMES).map(([exercise,name])=>{
         const list=detail?.sessions.filter(s=>s.exercise===exercise) ?? []
-        return list.length ? <p key={exercise}>{name}：{list.length} 组 · {exercise==='plank' ? `保持 ${duration(list.reduce((n,s)=>n+(s.hold?.heldMs ?? 0),0))}` : `${list.reduce((n,s)=>n+s.repCount,0)} ${exercise==='russian_twist' ? '次转体' : '次'}`} · 用时 {duration(list.reduce((n,s)=>n+s.durationMs,0))}</p>:null
+        return list.length ? <p key={exercise}>{name}：{list.length} 组 · {exercise==='plank' ? `保持 ${duration(list.reduce((n,s)=>n+(s.hold?.heldMs ?? 0),0))}` : exercise==='dumbbell_curl' ? `左手 ${list.reduce((n,s)=>n+(s.armCounts?.left ?? 0),0)} 次、右手 ${list.reduce((n,s)=>n+(s.armCounts?.right ?? 0),0)} 次（每只手各计一次）` : `${list.reduce((n,s)=>n+s.repCount,0)} ${exercise==='russian_twist' ? '次转体' : '次'}`} · 用时 {duration(list.reduce((n,s)=>n+s.durationMs,0))}</p>:null
       })}
     </div>
   </section>

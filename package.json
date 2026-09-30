@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --configLoader runner",
     "build": "tsc -b && vite build --configLoader runner",
-    "preview": "vite preview --configLoader runner"
+    "preview": "vite preview --configLoader runner",
+    "test:curl": "node --experimental-strip-types --test tests/curlDetector.test.mjs tests/curlHistory.test.mjs"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.32",

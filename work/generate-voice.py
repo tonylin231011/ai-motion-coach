@@ -41,6 +41,11 @@ phrases.update({
  'v15-crunch-start':'今天练反向卷腹！手机放在身体侧面，让肩、髋和膝盖入镜。先把腿放远，再收膝并慢慢放回。',
  'v15-crunch-finished':'这组反向卷腹结束！次数和用时已经记录好了。',
 })
+phrases.update({f'v17-curl-{key}': text for key,text in re.findall(r"^  (\w+): '([^']+)'", Path('src/curlDetector.ts').read_text(encoding='utf-8'), re.M)})
+phrases.update({
+ 'v17-curl-start':'今天练哑铃弯举！拍清肩、肘和手腕，先把手臂自然放下。每只手各计一次，双手一起一轮共两次。上臂稳住，弯起来，再控制放下！',
+ 'v17-curl-finished':'这组哑铃弯举完成！左右手次数和节奏点评都在总结里。休息一下，再继续！',
+})
 async def main():
     destination = Path('public/voice')
     destination.mkdir(parents=True, exist_ok=True)

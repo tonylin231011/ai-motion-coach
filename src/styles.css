@@ -18,6 +18,15 @@
 .exercise-picker { padding: 24px; gap: 18px; }
 .camera-stage.pushup-stage .camera-feed, .camera-stage.pushup-stage .skeleton-canvas { object-fit: contain; }
 .exercise-picker p { max-width: 420px; }
+@media(max-width:480px) {
+  .exercise-picker { padding:16px; gap:12px; }
+  .exercise-picker p { font-size:14px; line-height:1.5; }
+  .exercise-picker h2 { font-size:18px; }
+  .exercise-picker small { font-size:12px; }
+  .exercise-picker .exercise-options button { padding:10px 12px; font-size:14px; }
+  .app-shell .control-actions { gap:6px; }
+  .app-shell .control-actions button { font-size:13px; padding:12px 8px; }
+}
 .exercise-options { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
 .exercise-options button { background: #1a3556; color: #d5e6ff; border: 2px solid transparent; }
 .exercise-options button[aria-pressed="true"] { border-color: #7cf3d0; color: #7cf3d0; }

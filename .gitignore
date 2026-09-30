@@ -11,6 +11,7 @@ work/gh-tools/
 work/gh-config/
 work/github-proxy.js
 work/upload-github.mjs
+work/Fitness-OS/
 
 # Local service sessions, caches and deployment logs
 .cloudbase-config/

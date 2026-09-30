@@ -8,6 +8,7 @@ import { ReverseCrunchDetector } from './reverseCrunchDetector'
 import { ActivityHeatmap } from './ActivityHeatmap'
 import { EXERCISE_NAMES, type Exercise } from './types'
 import { readHistory, saveSession, review, duration, type Session } from './history'
+import { downloadHistoryExport } from './historyExport'
 
 const POSE_CONNECTIONS: Array<[number, number]> = [
   [11, 12], [11, 13], [13, 15], [12, 14], [14, 16], [11, 23], [12, 24],
@@ -74,6 +75,7 @@ export default function App() {
   const [summary, setSummary] = useState<Session | null>(null)
   const [showHistory, setShowHistory] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [exportStatus, setExportStatus] = useState('')
   const dialogRef = useRef<HTMLDialogElement>(null)
   const [elapsed, setElapsed] = useState(0)
   useEffect(() => {
@@ -353,6 +355,8 @@ export default function App() {
           <div className="exercise-options">{(['squat','pushup','plank','russian_twist','reverse_crunch'] as const).map(kind=><button key={kind} aria-pressed={historyFilter===kind} onClick={()=>setHistoryFilter(kind)}>{EXERCISE_NAMES[kind]}</button>)}</div>
           <div className="rep-row"><div><span>今日{historyFilter==='plank' ? '保持时长' : `${EXERCISE_NAMES[historyFilter]}次数`}</span><strong>{historyFilter==='plank' ? duration(filteredHistory.filter(s=>new Date(s.endedAt).toDateString()===new Date().toDateString()).reduce((n,s)=>n+(s.hold?.heldMs ?? 0),0)) : filteredHistory.filter(s=>new Date(s.endedAt).toDateString()===new Date().toDateString()).reduce((n,s)=>n+s.repCount,0)}</strong></div><div><span>累计训练</span><strong>{filteredHistory.length} 组</strong></div><div><span>累计用时</span><strong>{duration(filteredHistory.reduce((n,s)=>n+s.durationMs,0))}</strong></div></div>
           <p className="history-note">记录仅保存在当前手机的这个浏览器中。更换浏览器或清理网站数据后不会保留。</p>
+          <div className="history-export"><button type="button" disabled={!history.length} onClick={()=>{try { downloadHistoryExport(readHistory()); setExportStatus(`已生成全部 ${history.length} 组记录的 JSON 文件。请保存后在 Fitness OS 的配置后台导入。`) } catch { setExportStatus('导出失败，请检查浏览器的下载权限后重试。') }}}>导出全部训练记录</button><p className="history-note">导出包含所有运动，不受上方筛选影响；保留记录编号、次数、平板毫秒时长与俄罗斯转体“每侧一次”单位。</p></div>
+          {exportStatus && <p role="status" className="history-note">{exportStatus}</p>}
           {!filteredHistory.length && <p className="review-text">还没有{EXERCISE_NAMES[historyFilter]}记录。完成一组后，点击“结束训练”即可保存。</p>}
           {filteredHistory.map(s=><button className="history-entry" key={s.id} onClick={()=>{setSaveError('');setSummary(s)}}><span>{EXERCISE_NAMES[s.exercise]} · {new Date(s.endedAt).toLocaleString('zh-CN')}</span><strong>{s.exercise==='plank' ? `保持 ${duration(s.hold?.heldMs ?? 0)} · 中断 ${s.hold?.breaks ?? 0} 次` : `${s.repCount} 次${s.countMode==='completed' ? '完成' : '有效'} / ${s.attemptCount} 次尝试`} · {duration(s.durationMs)}</strong><small>查看本组点评 →</small></button>)}
         </>}

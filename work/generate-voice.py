@@ -1,4 +1,5 @@
 import asyncio
+import argparse
 from pathlib import Path
 import edge_tts
 import re
@@ -46,7 +47,18 @@ phrases.update({
  'v17-curl-start':'今天练哑铃弯举！拍清肩、肘和手腕，先把手臂自然放下。每只手各计一次，双手一起一轮共两次。上臂稳住，弯起来，再控制放下！',
  'v17-curl-finished':'这组哑铃弯举完成！左右手次数和节奏点评都在总结里。休息一下，再继续！',
 })
+phrases.update({f'v18-wall-{key}': text for key,text in re.findall(r"^  (\w+): '([^']+)'", Path('src/wallSitDetector.ts').read_text(encoding='utf-8'), re.M)})
+phrases.update({
+ 'v18-wall-start':'今天练靠墙静蹲。背贴墙，双脚向前踩稳，膝盖朝向脚尖。新手可蹲浅一些。侧面拍到肩髋膝和脚踝，准备好后起表；休息请点暂停。',
+ 'v18-wall-finished':'靠墙静蹲结束。达标组数、实际时长和每组结果已显示在总结里。休息好，再继续。',
+})
 async def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--prefix', default='', help='Only generate matching voice keys')
+    args = parser.parse_args()
+    selected = {key: text for key, text in phrases.items() if key.startswith(args.prefix)}
+    if not selected:
+        parser.error('No voice keys match the prefix')
     destination = Path('public/voice')
     destination.mkdir(parents=True, exist_ok=True)
     sem = asyncio.Semaphore(3)
@@ -54,7 +66,14 @@ async def main():
         async with sem:
             path = destination / f'{key}.mp3'
             if path.exists() and path.stat().st_size > 1000: return
-            await edge_tts.Communicate(text,'zh-CN-XiaoyiNeural',rate='+8%',pitch='+2Hz').save(str(path))
-    await asyncio.gather(*(generate(k,v) for k,v in phrases.items()))
-    print(f'Generated {len(phrases)} MP3 clips', flush=True)
+            temporary = path.with_suffix('.mp3.tmp')
+            try:
+                await edge_tts.Communicate(text,'zh-CN-XiaoyiNeural',rate='+8%',pitch='+2Hz').save(str(temporary))
+                if temporary.stat().st_size <= 1000:
+                    raise RuntimeError(f'Incomplete voice clip: {key}')
+                temporary.replace(path)
+            finally:
+                temporary.unlink(missing_ok=True)
+    await asyncio.gather(*(generate(k,v) for k,v in selected.items()))
+    print(f'Verified {len(selected)} MP3 clips', flush=True)
 asyncio.run(main())

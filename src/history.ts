@@ -1,12 +1,21 @@
 import type { RepRecord } from './coachDetector'
-import { EXERCISES, type ArmCounts, type Exercise, type HoldStats } from './types'
-export type Session = { curlCountUnit?:'arm_reps'; armCounts?:ArmCounts; twistCountUnit?:'sides'; legacyTwistPairs?:boolean; hold?:HoldStats; countMode?: 'completed'; exercise: Exercise; id: string; endedAt: number; durationMs: number; repCount: number; attemptCount: number; records: RepRecord[] }
+import { EXERCISES, type ArmCounts, type Exercise, type HoldStats, type WallSitStats } from './types'
+export type Session = { curlCountUnit?:'arm_reps'; armCounts?:ArmCounts; twistCountUnit?:'sides'; legacyTwistPairs?:boolean; hold?:HoldStats; wallSit?:WallSitStats; countMode?: 'completed'; exercise: Exercise; id: string; endedAt: number; durationMs: number; repCount: number; attemptCount: number; records: RepRecord[] }
 const KEY = 'motion-coach.sessions.v1'
+function validWallSit(s: Session) {
+  const w = s.wallSit, h = s.hold
+  if (!w || !h || !['manual', 'assisted'].includes(h.timerMode ?? '') || !Number.isFinite(w.targetMs) || w.targetMs < 5000 || w.targetMs > 120000 || w.currentMs !== 0 || !Array.isArray(w.sets)) return false
+  if (![h.heldMs, h.bestMs, h.breaks].every(n => Number.isFinite(n) && n >= 0) || !Number.isInteger(h.breaks)) return false
+  if (!w.sets.every(set => set && Number.isFinite(set.heldMs) && set.heldMs >= 0 && typeof set.completed === 'boolean' && set.completed === (set.heldMs >= w.targetMs))) return false
+  return w.completedSets === w.sets.filter(set => set.completed).length && s.repCount === w.completedSets && s.attemptCount === w.sets.length
+    && Math.abs(h.heldMs - w.sets.reduce((n, set) => n + set.heldMs, 0)) < .01
+    && Math.abs(h.bestMs - Math.max(0, ...w.sets.map(set => set.heldMs))) < .01 && h.breaks <= w.sets.length
+}
 export function readHistory(): Session[] {
   try {
     const raw: unknown = JSON.parse(localStorage.getItem(KEY) || '[]')
     const data: unknown = Array.isArray(raw) ? raw.map(s=>s && ({...s,exercise:s.exercise ?? 'squat',...(s.exercise==='russian_twist' && s.twistCountUnit!=='sides' ? {repCount:s.repCount*2,attemptCount:s.attemptCount*2,twistCountUnit:'sides',legacyTwistPairs:true} : {})})).filter(s=>s && EXERCISES.includes(s.exercise) && (s.exercise!=='plank' || (s.hold && [s.hold.heldMs,s.hold.bestMs,s.hold.breaks].every(n=>Number.isFinite(n) && n>=0))) && (s.exercise!=='dumbbell_curl' || (s.curlCountUnit==='arm_reps' && s.armCounts && [s.armCounts.left,s.armCounts.right].every(n=>Number.isInteger(n) && n>=0) && s.armCounts.left+s.armCounts.right===s.repCount))) : []
-    return Array.isArray(data) ? data.filter((s): s is Session => s && typeof s.id==='string' && Number.isFinite(s.endedAt) && Number.isFinite(s.durationMs) && Number.isInteger(s.repCount) && Number.isInteger(s.attemptCount) && Array.isArray(s.records) && s.records.every((r: RepRecord)=>r && Number.isFinite(r.durationMs) && Number.isFinite(r.minAngle) && typeof r.valid==='boolean' && [null,'shallow','fast'].includes(r.issue))) : []
+    return Array.isArray(data) ? data.filter((s): s is Session => s && typeof s.id==='string' && Number.isFinite(s.endedAt) && Number.isFinite(s.durationMs) && Number.isInteger(s.repCount) && Number.isInteger(s.attemptCount) && Array.isArray(s.records) && s.records.every((r: RepRecord)=>r && Number.isFinite(r.durationMs) && Number.isFinite(r.minAngle) && typeof r.valid==='boolean' && [null,'shallow','fast'].includes(r.issue)) && (s.exercise !== 'wall_sit' || validWallSit(s))) : []
   } catch { return [] }
 }
 export function saveSession(session: Session): Session[] {
@@ -16,6 +25,7 @@ export function saveSession(session: Session): Session[] {
 }
 export function duration(ms: number) { const seconds=Math.floor(ms/1000); return `${Math.floor(seconds/60)}分${seconds%60}秒` }
 export function review(session: Session) {
+  if(session.exercise==='wall_sit') return `每组目标 ${(session.wallSit?.targetMs ?? 20000)/1000} 秒，完成 ${session.repCount} 组，尝试 ${session.attemptCount} 组。累计保持 ${duration(session.hold?.heldMs ?? 0)}，最长连续 ${duration(session.hold?.bestMs ?? 0)}。${session.repCount ? '保持舒适姿势，休息充分后再练。' : '未到目标也会保留实际时长；下次可以缩短目标或蹲浅一些。'}达标只表示连续计时达到目标，不认证背部贴墙或完整姿势。`
   if(session.exercise==='dumbbell_curl') {
     const {left=0,right=0}=session.armCounts ?? {}
     const shallow=session.records.filter(r=>r.issue==='shallow').length

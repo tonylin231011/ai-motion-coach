@@ -21,16 +21,23 @@ async function verify(path) {
   return live
 }
 const html = (await verify('index.html')).toString()
+assert.equal(hash(await remote('')), hash(Buffer.from(html)), 'Directory entry differs from index.html')
+console.log('PASS directory entry matches index.html')
 const assets = [...html.matchAll(/(?:src|href)="\/ai-motion-coach\/(assets\/[^"\s]+)"/g)].map(match => match[1])
 assert.ok(assets.some(path => path.endsWith('.js')), 'No application script found')
-const bundles = await Promise.all(assets.map(verify))
+const builtAssets = (await readdir(resolve(dist, 'assets'))).filter(name => /\.(js|css)$/.test(name)).map(name => `assets/${name}`)
+const bundles = await Promise.all([...new Set([...assets, ...builtAssets])].map(verify))
 const code = bundles.map(bytes => bytes.toString()).join('\n')
-for (const feature of ['dumbbell_curl', 'arm_reps', '导出全部训练记录']) {
+for (const feature of ['dumbbell_curl', 'arm_reps', '导出全部训练记录', 'wall_sit', 'v18-wall', '开始下一组', '静蹲进步跟踪']) {
   assert.ok(code.includes(feature), `Feature missing: ${feature}`)
 }
-console.log('PASS curl and history export feature markers')
+console.log('PASS wall sit, curl and history export feature markers')
 const voices = (await readdir(resolve(dist, 'voice'))).filter(name => name.startsWith('v17-curl-') && name.endsWith('.mp3'))
 assert.equal(voices.length, 9, 'Expected nine curl coaching voice clips')
 for (const voice of voices) await verify(`voice/${voice}`)
+const wallCues = ['start', 'ready', 'pause', 'goal', 'breathe', 'unclear', 'finished']
+const wallVoices = (await readdir(resolve(dist, 'voice'))).filter(name => name.startsWith('v18-wall-') && name.endsWith('.mp3')).sort()
+assert.deepEqual(wallVoices, wallCues.map(cue => `v18-wall-${cue}.mp3`).sort(), 'Expected all seven wall sit voice clips')
+for (const voice of wallVoices) await verify(`voice/${voice}`)
 await verify('mediapipe/pose_landmarker_lite.task')
-console.log('PASS published application, curl voices and pose model match local build')
+console.log('PASS published application, wall sit/curl voices and pose model match local build')

@@ -20,6 +20,8 @@ work/Fitness-OS/
 .npm-cache/
 cloudbase-framework/
 outputs/
+output/playwright/
+.playwright-cli/
 
 # Local secrets and editor files
 .env

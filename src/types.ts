@@ -8,12 +8,15 @@ export type Landmarks = Partial<Record<LandmarkName, Point>>
 
 export type SquatPhase = 'WAITING' | 'STANDING' | 'DESCENDING' | 'BOTTOM' | 'ASCENDING'
 export type TrackingState = 'IDLE' | 'TRACKING' | 'LOST'
-export const EXERCISES = ['squat', 'pushup', 'plank', 'russian_twist', 'reverse_crunch', 'dumbbell_curl'] as const
+export const EXERCISES = ['squat', 'pushup', 'plank', 'russian_twist', 'reverse_crunch', 'dumbbell_curl', 'wall_sit'] as const
 export type Exercise = typeof EXERCISES[number]
-export const EXERCISE_NAMES = { squat: '深蹲', pushup: '俯卧撑', plank: '平板支撑', russian_twist: '俄罗斯转体', reverse_crunch: '反向卷腹', dumbbell_curl: '哑铃弯举' } as const
+export const EXERCISE_NAMES = { squat: '深蹲', pushup: '俯卧撑', plank: '平板支撑', russian_twist: '俄罗斯转体', reverse_crunch: '反向卷腹', dumbbell_curl: '哑铃弯举', wall_sit: '靠墙静蹲' } as const
+export const isTimedExercise = (exercise: Exercise) => exercise === 'plank' || exercise === 'wall_sit'
 export type ArmSide = 'left' | 'right'
 export type ArmCounts = Record<ArmSide, number>
 export type HoldStats = { heldMs:number; bestMs:number; breaks:number; timerMode?:'manual'|'auto'|'assisted' }
+export type WallSitSet = { heldMs: number; completed: boolean }
+export type WallSitStats = { targetMs: number; completedSets: number; currentMs: number; sets: WallSitSet[] }
 
 export type SquatSnapshot = {
   phase: SquatPhase
@@ -26,6 +29,7 @@ export type SquatSnapshot = {
   trackingReason?: string
   calibratedTopAngle?: number | null
   hold?: HoldStats
+  wallSit?: WallSitStats
   hipDisplacement: number | null
   confidence: number
   feedback: string

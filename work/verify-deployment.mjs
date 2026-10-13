@@ -28,7 +28,7 @@ assert.ok(assets.some(path => path.endsWith('.js')), 'No application script foun
 const builtAssets = (await readdir(resolve(dist, 'assets'))).filter(name => /\.(js|css)$/.test(name)).map(name => `assets/${name}`)
 const bundles = await Promise.all([...new Set([...assets, ...builtAssets])].map(verify))
 const code = bundles.map(bytes => bytes.toString()).join('\n')
-for (const feature of ['dumbbell_curl', 'arm_reps', '导出全部训练记录', 'wall_sit', 'v18-wall', '开始下一组', '静蹲进步跟踪', '云端备份', 'motion-coach.sync.v1', 'motion-coach:history']) {
+for (const feature of ['dumbbell_curl', 'arm_reps', '导出全部训练记录', 'wall_sit', 'v18-wall', '开始下一组', '静蹲进步跟踪', '云端备份', 'motion-coach.sync.v1', 'motion-coach:history', '正在上传历史记录', '重新连接并同步历史', '连接超过15秒']) {
   assert.ok(code.includes(feature), `Feature missing: ${feature}`)
 }
 console.log('PASS training auto sync, wall sit, curl and history export feature markers')

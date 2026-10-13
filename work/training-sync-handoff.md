@@ -6,7 +6,7 @@
 
 已实现：保存后的自动同步、首次历史补传、按训练 ID 幂等写入、成功确认后才记已同步、断网/失败重试、重新打开页面补传、另一设备获取云端历史、分页只读接口。所有摄像头与检测算法保持原样。本期为单人私有部署；不支持公共多用户注册。
 
-验证：`npm run build`；`npm run test:sync`（8项）；既有 `test:curl`（12项）、`test:wall-sit`（7项）。数据层测试使用内存替身，客户端网络测试使用 fetch 替身。尚未通过真实腾讯云数据库、手机端端到端测试。云端环境运行 CloudBase CLI 3.8.5 时，在读取网卡信息的启动阶段报 `uv_interface_addresses` 系统错误，未能进入登录或部署操作。
+验证：`npm run build`；`npm run test:sync`（8项）；既有 `test:curl`（12项）、`test:wall-sit`（7项）。数据层测试使用内存替身，客户端网络测试使用 fetch 替身。尚未通过真实腾讯云数据库、手机端端到端测试。云端环境运行 CloudBase CLI 3.8.5 时，在统计模块读取网卡信息时触发 `uv_interface_addresses` 错误；仅对临时CLI增加禁用统计时跳过设备ID初始化的兼容处理后，CLI已能启动。`env list --json`确认返回 `AUTH_FAILED / No valid identity found`。随后尝试官方设备授权登录，获取用户码成功，但授权轮询请求失败并退出，未获得登录凭据。需在原已登录电脑或可正常完成腾讯云登录的环境继续，不要使用本次失效用户码。
 
 ## 在原已登录 CloudBase 的电脑接续
 
@@ -33,3 +33,4 @@ GET `<endpoint>`，Authorization: Bearer <只读密钥>。默认返回每条训�
 - 不同设备必须使用同一个人配置。切换到另一个人的服务会补传本机历史，本版本不提供多账户功能。
 
 参考： https://docs.cloudbase.net/service/access-cloud-function （普通云函数HTTP访问）；https://docs.cloudbase.net/cloud-function/how-coding （CommonJS入口）；https://docs.cloudbase.net/api-reference/server/node-sdk （数据库SDK）。
+

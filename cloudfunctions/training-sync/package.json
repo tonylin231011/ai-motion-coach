@@ -1,0 +1,7 @@
+{
+  "name": "motion-coach-training-sync",
+  "private": true,
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": { "@cloudbase/node-sdk": "^3.0.0" }
+}

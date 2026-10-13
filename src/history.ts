@@ -11,17 +11,29 @@ function validWallSit(s: Session) {
     && Math.abs(h.heldMs - w.sets.reduce((n, set) => n + set.heldMs, 0)) < .01
     && Math.abs(h.bestMs - Math.max(0, ...w.sets.map(set => set.heldMs))) < .01 && h.breaks <= w.sets.length
 }
-export function readHistory(): Session[] {
+export function normalizeHistory(raw: unknown): Session[] {
   try {
-    const raw: unknown = JSON.parse(localStorage.getItem(KEY) || '[]')
     const data: unknown = Array.isArray(raw) ? raw.map(s=>s && ({...s,exercise:s.exercise ?? 'squat',...(s.exercise==='russian_twist' && s.twistCountUnit!=='sides' ? {repCount:s.repCount*2,attemptCount:s.attemptCount*2,twistCountUnit:'sides',legacyTwistPairs:true} : {})})).filter(s=>s && EXERCISES.includes(s.exercise) && (s.exercise!=='plank' || (s.hold && [s.hold.heldMs,s.hold.bestMs,s.hold.breaks].every(n=>Number.isFinite(n) && n>=0))) && (s.exercise!=='dumbbell_curl' || (s.curlCountUnit==='arm_reps' && s.armCounts && [s.armCounts.left,s.armCounts.right].every(n=>Number.isInteger(n) && n>=0) && s.armCounts.left+s.armCounts.right===s.repCount))) : []
     return Array.isArray(data) ? data.filter((s): s is Session => s && typeof s.id==='string' && Number.isFinite(s.endedAt) && Number.isFinite(s.durationMs) && Number.isInteger(s.repCount) && Number.isInteger(s.attemptCount) && Array.isArray(s.records) && s.records.every((r: RepRecord)=>r && Number.isFinite(r.durationMs) && Number.isFinite(r.minAngle) && typeof r.valid==='boolean' && [null,'shallow','fast'].includes(r.issue)) && (s.exercise !== 'wall_sit' || validWallSit(s))) : []
   } catch { return [] }
 }
+export function readHistory(): Session[] {
+  try { return normalizeHistory(JSON.parse(localStorage.getItem(KEY) || '[]')) } catch { return [] }
+}
 export function saveSession(session: Session): Session[] {
   const sessions = [session,...readHistory().filter(s=>s.id!==session.id)]
   localStorage.setItem(KEY,JSON.stringify(sessions))
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('motion-coach:history'))
   return sessions
+}
+// Merge downloaded history without triggering another upload cycle or losing a new local session.
+export function mergeHistory(remote: Session[]): Session[] {
+  const validated = normalizeHistory(remote)
+  if (validated.length !== remote.length) throw new Error('云端记录格式异常，本地记录已保留')
+  const local = readHistory()
+  const merged = [...new Map([...validated, ...local].map(s => [s.id, s])).values()].sort((a,b) => b.endedAt-a.endedAt)
+  localStorage.setItem(KEY, JSON.stringify(merged))
+  return readHistory()
 }
 export function duration(ms: number) { const seconds=Math.floor(ms/1000); return `${Math.floor(seconds/60)}分${seconds%60}秒` }
 export function review(session: Session) {
@@ -46,3 +58,4 @@ export function review(session: Session) {
   if(unobserved) return `有 ${unobserved} 次未完整观察到。下一组保持动作关键部位入镜，并回到起始姿势再开始。`
   return '本组观察到的幅度与完成度保持良好。休息后，下一组继续保持同样的动作质量！'
 }
+

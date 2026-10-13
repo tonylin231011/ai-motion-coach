@@ -8,6 +8,7 @@ import { WallSitProgress, WallSitHistoryProgress } from './WallSitProgress'
 import { TwistDetector } from './twistDetector'
 import { ReverseCrunchDetector } from './reverseCrunchDetector'
 import { CurlDetector } from './curlDetector'
+import { SyncPanel } from './SyncPanel'
 import { ActivityHeatmap } from './ActivityHeatmap'
 import { EXERCISES, EXERCISE_NAMES, isTimedExercise, type Exercise } from './types'
 import { readHistory, saveSession, review, duration, type Session } from './history'
@@ -317,6 +318,7 @@ export default function App() {
         <div><p className="eyebrow">实时动作教练</p><h1>AI 动作教练</h1></div>
         <button className="voice-toggle" disabled={isRunning || isLoading} onClick={()=>setShowHistory(true)}>训练记录</button>
       </header>
+      <SyncPanel onSynced={() => setHistory(readHistory())} disabled={isRunning || isLoading} />
       {isTimedExercise(exercise) && !isRunning && <div className="exercise-options mode-options"><button disabled={isLoading} aria-pressed={plankMode==='assisted'} onClick={()=>setPlankMode('assisted')}>自动起表</button><button disabled={isLoading} aria-pressed={plankMode==='manual'} onClick={()=>setPlankMode('manual')}>手动起表（备用）</button>
         {exercise==='wall_sit' && <label className="wall-target">每组目标 <select aria-label="静蹲每组目标时长" value={wallTargetSeconds} disabled={isLoading} onChange={e=>setWallTargetSeconds(Number(e.target.value))}>{[10,20,30,45,60].map(n=><option key={n} value={n}>{n} 秒</option>)}</select></label>}
       </div>}
@@ -406,3 +408,4 @@ export default function App() {
     </main>
   )
 }
+

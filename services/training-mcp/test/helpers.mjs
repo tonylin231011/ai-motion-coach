@@ -1,0 +1,4 @@
+import {generateKeyPair,SignJWT,createLocalJWKSet,exportJWK} from 'jose'
+import {createVerifier} from '../src/auth.mjs'
+export const config={resource:'https://mcp.example/training-mcp/mcp',issuer:'https://auth.example/',jwksUrl:'https://auth.example/jwks',subjects:['owner'],scope:'training:read',metadataUrl:'https://mcp.example/.well-known/oauth-protected-resource/training-mcp/mcp',allowedHosts:[],allowedOrigins:['https://chatgpt.com']}
+export async function tokens(){const {privateKey,publicKey}=await generateKeyPair('RS256');const verify=createVerifier(config,createLocalJWKSet({keys:[{...await exportJWK(publicKey),kid:'test',alg:'RS256'}]}));return {verify,sign:(overrides={})=>new SignJWT({sub:'owner',iss:config.issuer,aud:config.resource,scope:'training:read',iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+300,...overrides}).setProtectedHeader({alg:'RS256',kid:'test'}).sign(privateKey)}}

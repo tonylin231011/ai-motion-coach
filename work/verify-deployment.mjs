@@ -28,14 +28,16 @@ assert.ok(assets.some(path => path.endsWith('.js')), 'No application script foun
 const builtAssets = (await readdir(resolve(dist, 'assets'))).filter(name => /\.(js|css)$/.test(name)).map(name => `assets/${name}`)
 const bundles = await Promise.all([...new Set([...assets, ...builtAssets])].map(verify))
 const code = bundles.map(bytes => bytes.toString()).join('\n')
-for (const feature of ['dumbbell_curl', 'arm_reps', '导出全部训练记录', 'wall_sit', 'v18-wall', '开始下一组', '静蹲进步跟踪', '云端备份', 'motion-coach.sync.v1', 'motion-coach:history', '正在上传历史记录', '重新连接并同步历史', '连接超过15秒']) {
+for (const feature of ['dumbbell_curl', 'arm_reps', '导出全部训练记录', 'wall_sit', 'v18-wall', '静蹲进步跟踪', '云端备份', 'motion-coach.sync.v1', 'motion-coach:history', '正在上传历史记录', '重新连接并同步历史', '连接超过15秒']) {
   assert.ok(code.includes(feature), `Feature missing: ${feature}`)
 }
 console.log('PASS training auto sync, wall sit, curl and history export feature markers')
-for (const feature of ['今天，练什么？', '主导航', '结束并保存', '按运动筛选', '每一次坚持，都有迹可循', 'record-sync-status', 'camera-viewport']) {
+for (const feature of ['今天，练什么？', '主导航', '长按结束', '按运动筛选', '每一次坚持，都有迹可循', 'camera-viewport', '今日建议', '保存并完成', 'motion-coach.workout-draft.v2', 'motion-coach-local-replays-v2', '画面仅在本机识别，不会上传']) {
   assert.ok(code.includes(feature), `UI refresh missing: ${feature}`)
 }
 console.log('PASS light sage UI, navigation, uncropped camera and history screen markers')
+await verify('manifest.webmanifest')
+await verify('app-icon.svg')
 const voices = (await readdir(resolve(dist, 'voice'))).filter(name => name.startsWith('v17-curl-') && name.endsWith('.mp3'))
 assert.equal(voices.length, 9, 'Expected nine curl coaching voice clips')
 for (const voice of voices) await verify(`voice/${voice}`)

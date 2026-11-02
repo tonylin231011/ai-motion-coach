@@ -1,0 +1,167 @@
+.v2 {
+  --muted: #53645a;
+  padding-bottom: 130px;
+  font-variant-numeric: tabular-nums;
+  animation: page-arrive .18s ease-out;
+}
+@keyframes page-arrive { from { opacity: .7; } to { opacity: 1; } }
+.v2 .training-page { padding-bottom: 0; }
+.v2 .topbar { min-height: 70px; }
+.v2 .page-heading { margin: 12px 0 22px; }
+.v2 .topbar h1 { font-size: 18px; }
+.sync-status-mini { display: flex; align-items: center; gap: 2px; }
+.sync-dot-button, .sync-retry { background: transparent; color: #17664d; padding: 10px 8px; font-size: 12px; }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #718177; }
+.sync-dot-button.ok .sync-dot { background: #248859; }
+.sync-dot-button.busy .sync-dot { background: #8e7008; }
+.sync-dot-button.error .sync-dot { background: #b23d30; }
+.sync-dot-button.offline .sync-dot { background: #9b6800; }
+.recommendation { padding: 20px; background: #1c6b4f; border-radius: 22px; color: white; }
+.recommendation > p:first-child { color: #deeee3; font-size: 12px; margin-bottom: 7px; }
+.recommendation h3 { color: white; font-size: 24px; line-height: 1.45; letter-spacing: -.6px; }
+.recommendation > p { font-size: 12px; color: #fff; line-height: 1.75; margin: 7px 0 12px; }
+.recommendation-bottom { display: flex; align-items: stretch; gap: 12px; }
+.camera-tags { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.camera-tags span { background: #3d8066; color: #fff; font-size: 12px; padding: 8px; border-radius: 9px; line-height: 1.5; }
+.recommendation-start { color: #17664d; background: white; min-width: 65px; padding: 10px; border-radius: 28px; font-size: 16px; }
+.plan-editor { margin-top: 10px; }
+.plan-editor summary { font-size: 12px; color: #fff; min-height: 44px; padding: 12px 0; }
+.plan-editor > div { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.plan-editor label { display: grid; gap: 6px; min-width: 0; font-size: 12px; }
+.plan-editor input { min-width: 0; width: 100%; min-height: 44px; background: #fff; color: #143e2b; padding: 7px; border: 1px solid #c5d8cc; border-radius: 8px; }
+.exercise-groups { margin-top: 18px; }
+.exercise-groups h3 { font-size: 12px; color: #17664d; margin: 14px 0 4px; letter-spacing: 2px; }
+.exercise-row { width: 100%; min-height: 60px; background: transparent; color: #20352d; border-radius: 0; border-bottom: 1px solid #dce4dc; display: flex; padding: 7px 0; text-align: left; gap: 10px; }
+.exercise-row .exercise-icon { width: 40px; height: 40px; }
+.exercise-row strong { font-size: 15px; font-weight: 600; }
+.exercise-row > span { font-size: 12px; margin-left: auto; color: #53645a; text-align: right; font-weight: 400; max-width: 42%; }
+.exercise-row[aria-pressed=true] strong { color: #17664d; }
+.exercise-row[aria-pressed=true] { background: #eaf1e6; border-radius: 8px; padding-left: 6px; padding-right: 6px; }
+.recommendation { position: relative; padding: 16px; }
+.recommendation > p:first-child { line-height: 1.4; margin: 0 0 4px; }
+.recommendation h3 { line-height: 1.25; padding-right: 8px; }
+.recommendation > p:not(:first-child) { line-height: 1.5; margin: 6px 0 12px; }
+.plan-editor { margin-top: 0; }
+.plan-editor > summary { position: absolute; top: 0; right: 12px; padding: 12px 0; }
+.plan-editor[open] > div { padding-top: 14px; }
+.exercise-row { min-height: 48px; padding-top: 4px; padding-bottom: 4px; }
+.exercise-row .exercise-icon { width: 36px; height: 36px; }
+.exercise-groups h3 { margin-top: 10px; }
+.privacy-footer { position: fixed; bottom: calc(76px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(100%, 598px); padding: 10px 12px; text-align: center; font-size: 12px; color: #385b48; background: #f6f7f2; z-index: 4; border-top: 1px solid #e2e7df; }
+.v2 .bottom-nav { min-height: 76px; }
+.v2 .bottom-nav button { font-size: 12px; }
+.v2 .history-note, .v2 .history-entry-main small, .v2 .activity-nav, .v2 .heat-help summary, .v2 .heat-legend, .v2 .history-totals span, .v2 .voice-status { font-size: 12px; }
+.v2 .heat-0 { background: #e7ede3; }
+.v2 .heat-1 { background: #b8d2a6; }
+.v2 .heat-2 { background: #7caf6c; }
+.v2 .heat-3 { background: #438853; }
+.v2 .heat-4 { background: #155c3c; }
+.v2 .heatmap { gap: 4px; }
+.quality-explanation { font-size: 12px; color: #53645a; margin-bottom: 16px; }
+.quality-explanation summary { font-size: 12px; }
+.v2-history-totals { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.v2-history-totals > div { padding: 14px 10px; }
+.v2-history-totals strong { font-size: 30px; white-space: nowrap; }
+.v2-history-totals strong small { display: block; margin: 0; font-size: 12px; }
+.weekly-goal { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 12px; }
+.day-filter-reset { font-size: 12px; margin-bottom: 12px; }
+.v2.is-training { --muted: #becfc3; padding: 0 14px 8px; }
+.v2.is-training .topbar { min-height: 56px; }
+.v2.is-training .camera-card { height: calc(100vh - 64px); height: calc(100svh - 64px); }
+.v2.is-training .camera-stage { min-height: 0; }
+.v2.is-training .camera-overlay-top { padding: 12px 16px; }
+.v2.is-training .hud-reps strong { font-size: 76px; letter-spacing: -3px; line-height: 1.05; }
+.v2.is-training .hud-reps strong small { font-size: 25px; color: #c0d0c5; font-weight: 400; letter-spacing: 0; }
+.v2.is-training .hud-reps > span { font-size: 13px; color: #e3eee6; }
+.attempt-reason { font-size: 12px; line-height: 1.5; background: #58451d; color: #ffe0a0; border-radius: 16px; padding: 6px 10px; margin-top: 10px; width: fit-content; }
+.arm-caption { font-size: 16px; color: #c1eed1; margin-top: 6px; }
+.v2.is-training .camera-viewport { min-height: 96px; }
+.v2 .camera-overlay-bottom { padding: 13px 16px; }
+.v2 .coach-cue small { font-size: 12px; color: #cee5d6; }
+.v2 .coach-cue strong { font-size: 22px; line-height: 1.4; font-weight: 600; }
+.cue-caution .coach-cue small { color: #ffd082; }
+.cue-stop .coach-cue small, .cue-stop .coach-cue strong { color: #ffb5aa; }
+.training-actions { display: flex; gap: 12px; margin-top: 12px; }
+.training-actions button { flex: 1; min-height: 56px; border-radius: 28px; }
+.pause-action { background: #26895e; color: white; font-size: 18px; }
+.hold-finish { border: 1px solid #97b0a0; color: white; font-size: 17px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.hold-finish span { font-size: 12px; color: #e2eee7; }
+.v2 .voice-inline { font-size: 12px; min-height: 44px; }
+.v2 .voice-inline button { min-height: 44px; font-size: 12px; }
+.flow-overlay { position: absolute; inset: 0; background: #071b15b8; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 14px 30px; text-align: center; }
+.flow-overlay > strong { font-size: 36px; line-height: 1.15; }
+.flow-overlay > p { font-size: 14px; line-height: 1.5; }
+.flow-overlay button { min-height: 44px; font-size: 13px; padding: 9px 14px; }
+.stage-countdown > strong, .stage-rest > strong { font-size: 66px; }
+.depth-meter { position: absolute; right: 8px; top: 12%; bottom: 10%; display: flex; flex-direction: column; gap: 6px; align-items: center; color: white; text-shadow: 0 1px 3px #000; pointer-events: none; }
+.depth-meter > span, .depth-meter > small { font-size: 12px; }
+.depth-meter > div { width: 10px; flex: 1; min-height: 60px; border-radius: 6px; background: #496056d9; position: relative; box-shadow: 0 0 0 2px #0c1d18a0; }
+.depth-meter i { position: absolute; top: 72%; bottom: 0; left: 0; right: 0; background: #3cad75; border-radius: 6px; }
+.depth-meter b { position: absolute; width: 22px; height: 5px; left: -6px; transform: translateY(-50%); background: white; border-radius: 3px; box-shadow: 0 0 2px #000; }
+.summary-mode { padding-bottom: 30px; }
+.workout-summary { padding: 30px 0; animation: page-arrive .2s ease-out; }
+.workout-summary header p { font-size: 13px; color: #53645a; margin-top: 10px; }
+.workout-summary header { margin-bottom: 24px; }
+.summary-score { display: flex; align-items: center; gap: 20px; padding: 22px 18px; border-radius: 22px; background: white; }
+.score-ring { width: 112px; height: 112px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; }
+.score-ring > strong { display: grid; place-items: center; width: 94px; height: 94px; border-radius: 50%; background: white; color: #193b29; font-size: 28px; }
+.summary-score p { font-size: 12px; color: #53645a; }
+.summary-score h3 { font-size: 18px; color: #17664d; margin: 7px 0 16px; }
+.summary-totals { display: flex; gap: 18px; flex-wrap: wrap; }
+.summary-totals strong { display: block; font-size: 22px; }
+.summary-totals span { display: block; font-size: 12px; color: #53645a; margin-top: 4px; }
+.summary-sets { background: white; border-radius: 20px; padding: 20px; margin: 20px 0; }
+.summary-sets h3 { font-size: 17px; margin-bottom: 16px; }
+.summary-sets > div { display: flex; align-items: center; gap: 12px; margin-top: 14px; font-size: 13px; }
+.summary-sets span, .summary-sets b { white-space: nowrap; }
+.summary-sets progress { flex: 1; min-width: 0; height: 9px; accent-color: #17664d; }
+.summary-sets progress { appearance: none; border: 0; border-radius: 8px; overflow: hidden; background: #e4ebe4; }
+.summary-sets progress::-webkit-progress-bar { background: #e4ebe4; border-radius: 8px; }
+.summary-sets progress::-webkit-progress-value { background: #17664d; border-radius: 8px; }
+.summary-sets progress::-moz-progress-bar { background: #17664d; border-radius: 8px; }
+.improvement { background: #fff2d7; color: #584117; border-radius: 18px; padding: 20px; }
+.improvement small { font-size: 12px; color: #795000; }
+.improvement p { font-size: 15px; font-weight: 600; margin-top: 8px; line-height: 1.7; }
+.replay-card { background: white; border-radius: 18px; padding: 16px; margin: 20px 0 30px; }
+.replay-card > p { font-size: 12px; color: #53645a; }
+.replay-card button { width: 100%; }
+.local-replay { width: 100%; border-radius: 12px; margin-top: 12px; transform: scaleX(-1); }
+.share-action { display: flex; width: 100%; background: transparent; color: #17664d; margin-top: 10px; }
+.share-preview { width: 100%; border-radius: 18px; margin-top: 20px; }
+@media(max-width:360px) {
+  .v2 { padding-left: 14px; padding-right: 14px; }
+  .recommendation { padding: 16px; }
+  .recommendation h3 { font-size: 21px; }
+  .camera-tags span { padding: 6px; }
+  .summary-score { gap: 12px; padding: 16px 12px; }
+  .score-ring { width: 90px; height: 90px; }
+  .score-ring > strong { width: 74px; height: 74px; font-size: 23px; }
+  .summary-score h3 { font-size: 16px; }
+  .v2-history-totals strong { font-size: 26px; }
+}
+@media(max-height:700px) and (orientation:portrait) {
+  .v2.is-training .hud-reps strong { font-size: 52px; }
+  .v2.is-training .camera-overlay-top { padding: 8px 12px; }
+  .attempt-reason { margin-top: 6px; padding: 4px 8px; }
+  .v2 .camera-overlay-bottom { padding: 10px 12px; }
+  .v2 .training-actions { margin-top: 8px; }
+  .flow-overlay { gap: 5px; padding: 6px 12px; }
+  .flow-overlay > strong { font-size: 24px; }
+  .flow-overlay p { font-size: 12px; }
+  .stage-countdown > strong, .stage-rest > strong { font-size: 48px; }
+}
+@media(orientation:landscape) and (max-height:550px) {
+  .v2.is-training .topbar { min-height: 44px; }
+  .v2.is-training .camera-card { height: calc(100svh - 52px); }
+  .v2.is-training .camera-stage { grid-template-columns: 160px minmax(0,1fr) 240px; }
+  .v2.is-training .camera-overlay-top { padding: 8px; }
+  .v2.is-training .hud-reps strong { font-size: 46px; }
+  .v2.is-training .hud-reps strong small { font-size: 20px; }
+  .training-actions { margin-top: 7px; }
+  .training-actions button { min-height: 46px; }
+  .v2 .voice-inline { display: none; }
+  .v2 .coach-cue strong { font-size: 22px; }
+  .flow-overlay > strong { font-size: 24px; }
+  .flow-overlay p { font-size: 12px; }
+}
+@media(prefers-reduced-motion:reduce){.v2,.workout-summary{animation:none}}

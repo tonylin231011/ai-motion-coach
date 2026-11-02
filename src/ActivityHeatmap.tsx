@@ -2,7 +2,7 @@ import { memo, useMemo, useState } from 'react'
 import { calendarDays, dailyActivity, dayKey } from './activity'
 import { duration, type Session } from './history'
 import { EXERCISE_NAMES } from './types'
-export const ActivityHeatmap=memo(function ActivityHeatmap({sessions}:{sessions:Session[]}) {
+export const ActivityHeatmap=memo(function ActivityHeatmap({sessions,onSelectDay}:{sessions:Session[];onSelectDay?:(day:string)=>void}) {
   const [offset,setOffset]=useState(0)
   const [selected,setSelected]=useState('')
   const days=useMemo(()=>dailyActivity(sessions),[sessions])
@@ -14,7 +14,7 @@ export const ActivityHeatmap=memo(function ActivityHeatmap({sessions}:{sessions:
     <div className="heatmap">{dates.map(date=>{
       const key=dayKey(date),ms=days.get(key)?.durationMs ?? 0
       const level=!ms ? 0 : ms<300000 ? 1 : ms<900000 ? 2 : ms<1800000 ? 3 : 4
-      return <button key={key} className={`heat-cell heat-${level}`} disabled={key>today} aria-pressed={selected===key} aria-label={`${key}，${ms ? duration(ms) : '无运动记录'}`} title={`${key} · ${duration(ms)}`} onClick={()=>setSelected(key)} />
+      return <button key={key} className={`heat-cell heat-${level}`} disabled={key>today} aria-pressed={selected===key} aria-label={`${key}，${ms ? duration(ms) : '无运动记录'}`} title={`${key} · ${duration(ms)}`} onClick={()=>{setSelected(key);onSelectDay?.(key)}} />
     })}</div>
     <details className="heat-help"><summary>按训练用时，含组内休息</summary><p className="history-note">每列一周，从上到下为周一至周日。颜色按每日训练用时：无记录、少于5分、5–15分、15–30分、30分以上。按结束日期归档；点选日期查看当天所有动作。</p></details>
     <div className="heat-legend" aria-hidden="true">少 {[0,1,2,3,4].map(n=><i key={n} className={`heat-${n}`} />)} 多</div>

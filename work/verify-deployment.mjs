@@ -32,6 +32,10 @@ for (const feature of ['dumbbell_curl', 'arm_reps', '导出全部训练记录', 
   assert.ok(code.includes(feature), `Feature missing: ${feature}`)
 }
 console.log('PASS training auto sync, wall sit, curl and history export feature markers')
+for (const feature of ['今天，练什么？', '主导航', '结束并保存', '按运动筛选', '每一次坚持，都有迹可循', 'record-sync-status', 'camera-viewport']) {
+  assert.ok(code.includes(feature), `UI refresh missing: ${feature}`)
+}
+console.log('PASS light sage UI, navigation, uncropped camera and history screen markers')
 const voices = (await readdir(resolve(dist, 'voice'))).filter(name => name.startsWith('v17-curl-') && name.endsWith('.mp3'))
 assert.equal(voices.length, 9, 'Expected nine curl coaching voice clips')
 for (const voice of voices) await verify(`voice/${voice}`)

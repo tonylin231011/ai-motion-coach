@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { configureSync, DEFAULT_SYNC_ENDPOINT, getSyncConfig, syncHistory } from './sync'
-export function SyncPanel({ onSynced, disabled }: { onSynced: () => void; disabled: boolean }) {
+export function SyncPanel({ onSynced, disabled, onStatusChange }: { onSynced: () => void; disabled: boolean; onStatusChange?: (status: string) => void }) {
   const [config, setConfig] = useState(getSyncConfig)
   const [endpoint, setEndpoint] = useState(config?.endpoint ?? DEFAULT_SYNC_ENDPOINT)
   const [token, setToken] = useState('')
   const [status, setStatus] = useState(config ? '准备同步' : '仅保存在本机 · 尚未连接云端')
   const [busy, setBusy] = useState(false)
+  useEffect(() => { onStatusChange?.(status) }, [status, onStatusChange])
   const callback = useRef(onSynced); callback.current = onSynced
   const retry = useRef<(() => void) | null>(null)
   useEffect(() => {

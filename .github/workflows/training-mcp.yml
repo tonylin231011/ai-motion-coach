@@ -1,0 +1,28 @@
+name: Training MCP checks
+on:
+  push:
+    paths:
+      - 'services/training-mcp/**'
+      - '.github/workflows/training-mcp.yml'
+  pull_request:
+    paths:
+      - 'services/training-mcp/**'
+      - '.github/workflows/training-mcp.yml'
+permissions:
+  contents: read
+jobs:
+  readonly-mcp:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/training-mcp
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: services/training-mcp/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm test
+      - run: npm audit --omit=dev --audit-level=high

@@ -1,0 +1,240 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AI Motion Coach Private Training Reader",
+    "version": "1.0.0",
+    "description": "Read-only session summaries. Authentication is configured privately in the GPT editor. No write operations."
+  },
+  "servers": [
+    {
+      "url": "https://nanbuqu-dashboard-d0drnae5202324-1433064673.ap-shanghai.app.tcloudbase.com"
+    }
+  ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/training-sync": {
+      "get": {
+        "operationId": "readTrainingPage",
+        "summary": "Read one page of training summaries",
+        "description": "Always start without cursor for each new analysis. Follow nextCursor until null; records are hash-ordered, not date-ordered. Deduplicate by id then filter dates in Asia/Shanghai. Summary only; no per-repetition angles. Never interpret elapsed durationMs as actual holding time.",
+        "x-openai-isConsequential": false,
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "description": "Exact nextCursor from the preceding response. Omit for the first page.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Page of summaries; null nextCursor marks completion.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid cursor"
+          },
+          "401": {
+            "description": "Missing or invalid credential; owner must check GPT authentication settings."
+          },
+          "403": {
+            "description": "Access denied; do not retry with a write key."
+          },
+          "503": {
+            "description": "Service configuration or storage unavailable; do not claim latest data."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "Page": {
+        "type": "object",
+        "required": [
+          "schemaVersion",
+          "timezone",
+          "sessions",
+          "nextCursor"
+        ],
+        "properties": {
+          "schemaVersion": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "timezone": {
+            "type": "string",
+            "enum": [
+              "Asia/Shanghai"
+            ]
+          },
+          "sessions": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/Session"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Opaque pagination cursor, not a date."
+          }
+        }
+      },
+      "Session": {
+        "type": "object",
+        "required": [
+          "id",
+          "exercise",
+          "endedAt",
+          "durationMs",
+          "repCount",
+          "attemptCount"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "exercise": {
+            "type": "string",
+            "enum": [
+              "squat",
+              "pushup",
+              "plank",
+              "wall_sit",
+              "dumbbell_curl",
+              "russian_twist",
+              "reverse_crunch"
+            ]
+          },
+          "endedAt": {
+            "type": "number",
+            "description": "Unix milliseconds"
+          },
+          "durationMs": {
+            "type": "number",
+            "description": "Elapsed session time, includes rests; NOT holding time"
+          },
+          "repCount": {
+            "type": "integer",
+            "description": "Observed counts; wall_sit uses completed sets, not repetitions; not a technique certification."
+          },
+          "attemptCount": {
+            "type": "integer"
+          },
+          "countMode": {
+            "type": "string"
+          },
+          "localDate": {
+            "type": "string"
+          },
+          "hold": {
+            "type": "object",
+            "properties": {
+              "heldMs": {
+                "type": "number"
+              },
+              "bestMs": {
+                "type": "number"
+              },
+              "breaks": {
+                "type": "integer"
+              },
+              "timerMode": {
+                "type": "string"
+              }
+            }
+          },
+          "wallSit": {
+            "type": "object",
+            "properties": {
+              "targetMs": {
+                "type": "number"
+              },
+              "completedSets": {
+                "type": "integer"
+              },
+              "currentMs": {
+                "type": "number"
+              },
+              "sets": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "heldMs": {
+                      "type": "number"
+                    },
+                    "completed": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "armCounts": {
+            "type": "object",
+            "properties": {
+              "left": {
+                "type": "integer"
+              },
+              "right": {
+                "type": "integer"
+              }
+            }
+          },
+          "curlCountUnit": {
+            "type": "string"
+          },
+          "twistCountUnit": {
+            "type": "string"
+          },
+          "legacyTwistPairs": {
+            "type": "boolean"
+          },
+          "qualityHints": {
+            "type": "object",
+            "properties": {
+              "fast": {
+                "type": "integer"
+              },
+              "shallow": {
+                "type": "integer"
+              }
+            }
+          },
+          "qualityHintsAreFailures": {
+            "type": "boolean",
+            "description": "False: hints may coexist with valid completed repetitions."
+          }
+        }
+      }
+    }
+  }
+}

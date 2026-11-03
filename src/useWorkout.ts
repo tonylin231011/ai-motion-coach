@@ -1,3 +1,4 @@
+import { posture, TimedPosture, savePosture } from './timedPosture'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Exercise, Landmarks } from './types'
 import { WorkoutFlow, type FlowView } from './workoutFlow'
@@ -21,6 +22,8 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
   const [view,setView]=useState<FlowView|null>(null),[loading,setLoading]=useState(false),[error,setError]=useState('')
   const [voiceEnabled,setVoiceEnabled]=useState(true),enabled=useRef(true),lastVoice=useRef({key:'',at:0})
   const [voiceStatus,setVoiceStatus]=useState('语音已开启'),[replayStatus,setReplayStatus]=useState('回放仅保存在本机')
+  const assessment=useRef(new TimedPosture()),bodyReady=useRef(false)
+  const [framing,setFraming]=useState('')
   const countdownVoice=useRef('')
   const spokenEvent=useRef('')
   const announce=useCallback((key:string,force=false)=>{
@@ -60,7 +63,10 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
       if(key!==spokenEvent.current&&announce(`${prefix(controller.exercise)}-${next.snapshot.cue}`))spokenEvent.current=key
     }
     if(next.stage!=='countdown')countdownVoice.current=''
+    if(next.stage!=='active')assessment.current.pause()
     if(completed){
+      const session=controller.sessions.at(-1)!
+      if(session.exercise==='plank'||session.exercise==='wall_sit'){try{savePosture(session.id,{...assessment.current.report,totalMs:session.hold?.heldMs??0})}catch{setError('姿态统计未能保存在本机，训练时长仍保留')}assessment.current=new TimedPosture()}
       if(!buffer.current?.best)buffer.current?.consider(controller.currentId,0,6000,'本组保持片段（仅本机，姿势未评分）',t)
       const clip=buffer.current?.best
       if(clip){current.replayIds.push(clip.id);persist.current=persist.current.then(()=>storeReplay(clip)).catch(()=>setReplayStatus('本机空间或权限不足，回放未保存；训练记录仍保留'))}
@@ -80,6 +86,7 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
     flow.current=new WorkoutFlow(exercise,{...plan},timerOnly)
     draft.current={id:crypto.randomUUID(),exercise,plan:{...plan},sessions:[],createdAt:Date.now(),replayIds:[],ruleCounts:{}}
     storedGroups.current=0;seenRecords.current=0;pendingRules.current.clear();persist.current=Promise.resolve();finishQueued.current=false;spokenEvent.current='';countdownVoice.current=''
+    assessment.current=new TimedPosture();bodyReady.current=false;setFraming('')
     active.current=true;setReplayStatus(timerOnly?'纯计时模式没有镜头回放':'回放仅保存在本机');setError('')
     if(!timerOnly)buffer.current=new ReplayBuffer()
     if(timerOnly)flow.current.manualStart(performance.now())
@@ -93,8 +100,7 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
     try{
       if(timerOnly){init(exercise,plan,true);return}
       if(!navigator.mediaDevices?.getUserMedia)throw Error('当前环境不能打开摄像头，请确认使用 HTTPS 并允许相机权限')
-      const portrait=window.matchMedia('(orientation: portrait)').matches
-      const incoming=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:portrait?480:640},height:{ideal:portrait?640:480},aspectRatio:{ideal:portrait?3/4:4/3},frameRate:{ideal:24,max:30}},audio:false})
+      const incoming=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:720},height:{ideal:1280},frameRate:{ideal:24,max:30}},audio:false})
       if(token!==generation.current){incoming.getTracks().forEach(t=>t.stop());return}
       stream.current=incoming
       const video=videoRef.current;if(!video)throw Error('视频预览未就绪')
@@ -117,9 +123,19 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
             const began=performance.now(),result=runtime.detectForVideo(video,t);gap=Math.max(90,Math.min(350,(performance.now()-began)*2.5))
             const raw=result.landmarks[0]??[],landmarks:Landmarks={}
             for(const [index,name] of Object.entries(MAP)){const p=raw[Number(index)];if(p)landmarks[name]={...p,z:0,visibility:p.visibility??1}}
-            const next=flow.current!.frame(landmarks,t,video.videoWidth,video.videoHeight,luminance)
+            const controller=flow.current!,timed=exercise==='plank'||exercise==='wall_sit'
+            const observation=posture(raw,exercise,video.videoWidth,video.videoHeight)
+            const viewport=video.parentElement!,scale=Math.max(viewport.clientWidth/video.videoWidth,viewport.clientHeight/video.videoHeight)
+            const dx=(video.videoWidth*scale-viewport.clientWidth)/2,dy=(video.videoHeight*scale-viewport.clientHeight)/2
+            const inside=(p:PoseDot)=>p.x*video.videoWidth*scale-dx>8&&p.x*video.videoWidth*scale-dx<viewport.clientWidth-8&&p.y*video.videoHeight*scale-dy>8&&p.y*video.videoHeight*scale-dy<viewport.clientHeight-8
+            bodyReady.current=observation.visible&&[0,11,12,23,24,25,26,27,28].filter(i=>raw[i]&&(raw[i].visibility??0)>.5).every(i=>inside(raw[i]))
+            setFraming(timed&&!bodyReady.current?'请后退，让全身入镜':video.videoWidth>video.videoHeight&&raw.some(p=>(p.visibility??0)>.5&&!inside(p))?'请站远一点':'')
+            if(timed&&!bodyReady.current&&(controller.stage==='ready'||controller.stage==='countdown')){controller.pause(t);controller.resume()}
+            const wasActive=controller.stage==='active',heldBefore=controller.view(t).snapshot.hold?.heldMs??0
+            const next=controller.frame(timed&&!bodyReady.current&&!wasActive?{}:landmarks,t,video.videoWidth,video.videoHeight,luminance)
+            if(timed&&wasActive){const held=controller.sessions.length>storedGroups.current?controller.sessions.at(-1)?.hold?.heldMs??heldBefore:next.snapshot.hold?.heldMs??heldBefore;assessment.current.sample(held,observation)}
             const joint=next.feedback.joints.map(i=>raw[i]).find(p=>p&&(p.visibility??1)>=.65)
-            setAnchor(joint?{x:(1-joint.x)*100,y:joint.y*100}:null)
+            setAnchor(joint?{x:(viewport.clientWidth-(joint.x*video.videoWidth*scale-dx))/viewport.clientWidth*100,y:(joint.y*video.videoHeight*scale-dy)/viewport.clientHeight*100}:null)
             const canvas=canvasRef.current;if(canvas){if(canvas.width!==video.videoWidth||canvas.height!==video.videoHeight){canvas.width=video.videoWidth;canvas.height=video.videoHeight}const ctx=canvas.getContext('2d');if(ctx)drawSkeleton(ctx,raw,canvas.width,canvas.height,next.feedback);if(next.stage==='active')buffer.current?.capture(video,canvas,t)}
             publish(next,t)
           }
@@ -135,7 +151,7 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
     return()=>{clearInterval(timer);document.removeEventListener('visibilitychange',hide);teardown()}
   },[publish,teardown])
   const action=(fn:(f:WorkoutFlow,t:number)=>void)=>{const f=flow.current;if(!f)return;const t=performance.now();fn(f,t);publish(f.view(t),t)}
-  return {videoRef,canvasRef,audioRef,view,loading,error,luminance,anchor,voiceEnabled,voiceStatus,replayStatus,start,timerOnly:flow.current?.timerOnly??false,
+  return {videoRef,canvasRef,audioRef,view,loading,error,luminance,anchor,framing,voiceEnabled,voiceStatus,replayStatus,start,timerOnly:flow.current?.timerOnly??false,
     toggleVoice:()=>{enabled.current=!enabled.current;setVoiceEnabled(enabled.current);announce(enabled.current?'on':'off',true)},testVoice:()=>announce('test',true),
-    pause:()=>action((f,t)=>f.pause(t)),resume:()=>action(f=>f.resume()),manualStart:()=>action((f,t)=>f.manualStart(t)),skipRest:()=>action(f=>f.nextAfterRest()),finish:()=>action((f,t)=>f.finish(t)),clear:()=>{teardown();flow.current=null;setView(null)}}
+    pause:()=>action((f,t)=>f.pause(t)),resume:()=>action(f=>f.resume()),manualStart:()=>{const f=flow.current;if(f&&!f.timerOnly&&(f.exercise==='plank'||f.exercise==='wall_sit')&&!bodyReady.current){setError('请后退，让全身入镜');return}action((f,t)=>f.manualStart(t))},skipRest:()=>action(f=>f.nextAfterRest()),finish:()=>action((f,t)=>f.finish(t)),clear:()=>{teardown();flow.current=null;setView(null)}}
 }

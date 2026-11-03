@@ -126,3 +126,22 @@ body { background:#F5F7F2; }
 @media(max-height:700px) and (orientation:portrait){.b2 .flow-overlay {padding:155px 12px 80px;gap:5px;}.b2 .flow-overlay>strong {font-size:20px;}.b2 .flow-overlay>p {font-size:12px;}}
 .b2 .depth-meter {bottom:85px;}
 .b2 .timer-only-message {z-index:2;background:#e6ece1;color:#101411;padding:160px 12px 90px;}.b2 .timer-only-message small {color:#5A655E;}.b2 .timer-only-message .exercise-icon {color:#101411;}
+
+/* Field fixes: identical full-source cover mapping for mirrored video/canvas. */
+button,.b2.is-training {user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+.b2.is-training {min-height:100dvh;display:flex;flex-direction:column;padding-bottom:8px;}
+.b2.is-training .train-page {flex:1;min-height:0;display:flex;flex-direction:column;}
+.b2.is-training .camera-card {height:calc(100dvh - 76px);min-height:400px;display:flex;flex-direction:column;}
+.b2.is-training .camera-stage {flex:1;aspect-ratio:auto;min-height:0;border-radius:28px;background:#0E1210;display:flex;flex-direction:column;}
+.b2.is-training .camera-viewport {position:relative;inset:auto;flex:1;min-height:0;background:#0E1210;}
+.b2.is-training .camera-feed,.b2.is-training .skeleton-canvas {position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;transform:scaleX(-1);}
+.b2.is-training .camera-overlay-bottom {position:relative;flex-shrink:0;}
+.b2 .count-ring {position:relative;background:#e4f8ad!important;border-color:transparent;}
+.b2 .ring-arc {position:absolute;inset:-2%;width:104%;height:104%;pointer-events:none;}
+.b2 .count-ring .hud-reps {position:relative;z-index:1;}
+.b2.is-training .hud-reps>span {font-size:10px;white-space:nowrap;max-width:none;}
+.b2 .framing-warning {position:absolute;bottom:16px;left:12px;right:12px;z-index:6;color:#fff;background:#a42020ec;border-radius:12px;padding:10px;text-align:center;pointer-events:none;}
+.b2 .summary-totals>div {min-width:0;}.b2 .summary-totals strong {font-size:clamp(22px,7vw,42px);white-space:nowrap;letter-spacing:-1px;}
+.b2 .posture-results p {margin:10px 0;line-height:1.6;}
+.hold-finish.hold-hint {animation:hold-shake .2s linear;}
+@keyframes hold-shake {25%,75%{transform:translateX(-3px)}50%{transform:translateX(3px)}}

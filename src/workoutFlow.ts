@@ -13,7 +13,7 @@ import type { TrainingPlan } from './workoutMetrics'
 export type FlowStage = 'ready' | 'countdown' | 'active' | 'paused' | 'rest' | 'summary'
 type Detector = SquatDetector | PushupDetector | PlankDetector | WallSitDetector | TwistDetector | ReverseCrunchDetector | CurlDetector
 type Stats = Pick<Session, 'repCount' | 'attemptCount' | 'records' | 'hold' | 'wallSit' | 'armCounts'>
-export type FlowView = { stage: FlowStage; group: number; countdown: number; remainingRest: number; snapshot: SquatSnapshot; feedback: VisualFeedback; elapsed: number; lastMiss: string; completed: number; revision: number }
+export type FlowView = { stage: FlowStage; group: number; countdown: number; remainingRest: number; snapshot: SquatSnapshot & {records: RepRecord[]}; feedback: VisualFeedback; elapsed: number; lastMiss: string; completed: number; revision: number }
 const empty = (): SquatSnapshot => ({phase:'WAITING',repCount:0,attemptCount:0,averageKneeAngle:null,hipDisplacement:null,confidence:0,feedback:'摆好起始姿势，稳定后自动开始'})
 function makeDetector(exercise: Exercise, target: number, manual=false): Detector {
   switch(exercise){case 'pushup':return new PushupDetector();case 'plank':return new PlankDetector('assisted');case 'wall_sit':return new WallSitDetector(manual?'manual':'assisted',target*1000);case 'russian_twist':return new TwistDetector();case 'reverse_crunch':return new ReverseCrunchDetector();case 'dumbbell_curl':return new CurlDetector();default:return new SquatDetector()}

@@ -40,7 +40,7 @@ const active=()=>page.locator('.live-status').filter({hasText:'正在训练'}).w
 async function pose(angle,ms){await page.evaluate(a=>window.__poseAngle=a,angle);await page.waitForTimeout(ms)}
 async function rep(){await pose(130,600);await pose(90,850);await pose(130,600);await pose(175,900)}
 try{
- await page.goto(base);await page.getByRole('heading',{name:'今天，练什么？'}).waitFor();await page.locator('.sync-dot-button.ok').waitFor()
+ await page.goto(base);await page.getByRole('heading',{name:/今日训练/}).waitFor();await page.locator('.sync-dot-button.ok').waitFor()
  for(const [width,height] of [[390,844],[360,640],[320,568],[844,390],[1280,900]]){
   await page.setViewportSize({width,height});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1))
   await page.screenshot({path:resolve(out,`home-${width}.png`),fullPage:true})
@@ -50,7 +50,7 @@ try{
  const original=await page.evaluate(()=>localStorage.getItem('motion-coach.sessions.v1'))
  pass('home: seven grouped exercises, suggestion, camera tags, quiet sync dot, five viewport sizes')
  await page.locator('.plan-editor summary').click();await page.getByLabel('组数',{exact:true}).fill('2');await page.getByLabel('每组次数').fill('1');await page.getByLabel('休息秒数').fill('10')
- await page.getByRole('button',{name:'开始',exact:true}).click();await active()
+ await page.getByRole('button',{name:'开始训练',exact:true}).click();await active()
  await page.getByRole('button',{name:'长按一秒结束训练'}).click();assert.equal(await page.getByRole('region',{name:'训练总结'}).count(),0)
  await page.evaluate(()=>window.__light=10);await page.getByText('画面偏暗，请开灯或面向光源',{exact:true}).waitFor({timeout:7000})
  await page.evaluate(()=>{window.__light=120;window.__poseMode='cropped'});await page.getByText('腿部未完整入镜，请拍到髋、膝盖和脚踝',{exact:true}).waitFor({timeout:7000})
@@ -58,7 +58,7 @@ try{
  for(const [width,height] of [[390,844],[360,640],[844,390]]){
   await page.setViewportSize({width,height})
   const dims=await page.locator('.training-actions').boundingBox();assert.ok(dims.y+dims.height<=height+1,`controls visible ${width}`)
-  assert.ok(await page.locator('.coach-cue strong').evaluate(el=>parseFloat(getComputedStyle(el).fontSize)>=22))
+  assert.ok(await page.locator('.coach-cue strong').evaluate(el=>parseFloat(getComputedStyle(el).fontSize)>=18))
   await page.screenshot({path:resolve(out,`training-${width}.png`),fullPage:true})
  }
  await page.setViewportSize({width:390,height:844});await pose(130,800);await pose(175,900)

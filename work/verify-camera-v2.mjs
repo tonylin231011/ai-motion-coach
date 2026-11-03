@@ -7,7 +7,7 @@ const context=await browser.newContext({viewport:{width:390,height:844}}),page=a
 page.on('pageerror',e=>errors.push(e.message));page.on('response',r=>{if(r.ok()&&/\.wasm|\.task/.test(r.url()))resources.push(r.url())})
 const base=process.env.UI_TEST_BASE||'http://127.0.0.1:5173/ai-motion-coach/'
 try{
- await page.goto(base);await page.getByRole('button',{name:'开始',exact:true}).click()
+ await page.goto(base);await page.getByRole('button',{name:'开始训练',exact:true}).click()
  await page.getByRole('button',{name:'已准备好，手动倒数'}).waitFor({timeout:60000})
  assert.ok(resources.some(s=>s.includes('.wasm'))&&resources.some(s=>s.includes('.task')),'real model and WASM loaded')
  assert.ok(await page.locator('video').evaluate(v=>v.videoWidth>0&&!v.paused))

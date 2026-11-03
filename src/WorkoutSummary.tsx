@@ -1,3 +1,4 @@
+import { RepDetails } from './BrightUI'
 import { useEffect, useRef, useState } from 'react'
 import { EXERCISE_NAMES, isTimedExercise } from './types'
 import { duration, type Session } from './history'
@@ -31,10 +32,10 @@ export function WorkoutSummary({draft,history,onSave,onDone,saved=false,error=''
   const share=async()=>{
     if(sharing.current)return;sharing.current=true
     try{
-      const c=document.createElement('canvas');c.width=1080;c.height=1080;const ctx=c.getContext('2d')!;ctx.fillStyle='#f6f8f3';ctx.fillRect(0,0,1080,1080)
-      ctx.fillStyle='#17664d';ctx.font='bold 44px sans-serif';ctx.fillText('AI 动作教练',80,100);ctx.fillStyle='#152c22';ctx.font='bold 66px sans-serif';ctx.fillText('每一次坚持，都算进步',80,240)
+      const c=document.createElement('canvas');c.width=1080;c.height=1080;const ctx=c.getContext('2d')!;ctx.fillStyle='#C6FF3D';ctx.fillRect(0,0,1080,1080)
+      ctx.fillStyle='#101411';ctx.font='bold 44px sans-serif';ctx.fillText('AI 动作教练',80,100);ctx.fillStyle='#152c22';ctx.font='bold 66px sans-serif';ctx.fillText('每一次坚持，都算进步',80,240)
       ctx.font='40px sans-serif';ctx.fillText(`${EXERCISE_NAMES[draft.exercise]} · ${draft.sessions.length} 组`,80,330)
-      ctx.font='bold 120px sans-serif';ctx.fillStyle='#17664d';ctx.fillText(timed?duration(held):`${total} 次`,80,520)
+      ctx.font='bold 120px sans-serif';ctx.fillStyle='#101411';ctx.fillText(timed?duration(held):`${total} 次`,80,520)
       ctx.font='36px sans-serif';ctx.fillStyle='#354b3e';ctx.fillText(timed?'累计保持':draft.exercise==='squat'?'有效次数':'完成次数',80,585)
       ctx.fillText(`可见动作标准率：${q.percent===null?'未评估':q.percent+'%'}`,80,700);ctx.fillText(`训练用时：${duration(elapsed)}`,80,770)
       ctx.font='26px sans-serif';ctx.fillText('仅评价可见幅度与节奏；静态保持不评分',80,930);ctx.fillText('成果卡不包含训练画面',80,975)
@@ -45,11 +46,11 @@ export function WorkoutSummary({draft,history,onSave,onDone,saved=false,error=''
     }catch{setShareStatus('成果卡生成失败，请重试。')}finally{sharing.current=false}
   }
   return <section className="workout-summary" aria-label="训练总结"><header><p className="eyebrow">把进步，留在这里</p><h2>训练完成</h2><p>{EXERCISE_NAMES[draft.exercise]} · {draft.sessions.length} 组 · 用时 {duration(elapsed)}</p></header>
-    <div className="summary-score"><div className="score-ring" style={{background:`conic-gradient(#17664d ${(q.percent??0)*3.6}deg,#e4ebe4 0)`}}><strong>{q.percent===null?'—':`${q.percent}%`}</strong></div><div><p>可见动作标准率</p><h3>{deltaLabel(q.percent,old)}</h3><div className="summary-totals"><div><strong>{timed?duration(held):total}</strong><span>{timed?'累计保持':draft.exercise==='squat'?'有效':'完成'}</span></div>{!timed&&<div><strong>{attempts}</strong><span>尝试</span></div>}<div><strong>{draft.sessions.length}</strong><span>组数</span></div></div></div></div>
+    <div className="summary-score"><p>可见动作标准率</p><strong>{q.percent===null?'—':q.percent}<small>{q.percent===null?'未评估':'%'}</small></strong><h3>{deltaLabel(q.percent,old)}</h3></div><div className="summary-totals"><div><strong>{timed?duration(held):total}</strong><span>{timed?'累计保持':draft.exercise==='squat'?'有效':'完成'}</span></div>{!timed&&<div><strong>{attempts}</strong><span>尝试</span></div>}<div><strong>{draft.sessions.length}</strong><span>组数</span></div></div>
     <p className="history-note">{QUALITY_NOTE}{timed?' 本动作仅计时，不给标准率。':''}</p>
-    <section className="summary-sets"><h3>{timed?'每组保持时长':'每组可见动作标准率'}</h3>{draft.sessions.map((s,i)=>{const value=quality([s]).percent,heldMs=s.hold?.heldMs??0;return <div key={s.id}><span>第 {i+1} 组</span><progress max={timed?Math.max(1,draft.plan.target)*1000:100} value={timed?heldMs:value??0} aria-label={`第${i+1}组${timed?`保持${duration(heldMs)}`:value===null?'未评估':`标准率${value}%`}`} /><b>{timed?duration(heldMs):value===null?'未评估':`${value}%`}</b></div>})}</section>
+    <section className="summary-sets"><h3>{timed?'每组保持时长':'每组可见动作标准率'}</h3>{draft.sessions.map((s,i)=>{const value=quality([s]).percent,heldMs=s.hold?.heldMs??0;return <div key={s.id}><span>第 {i+1} 组</span><progress className={!timed&&value!==null&&value<85?'below-target':''} max={timed?Math.max(1,draft.plan.target)*1000:100} value={timed?heldMs:value??0} aria-label={`第${i+1}组${timed?`保持${duration(heldMs)}`:value===null?'未评估':`标准率${value}%`}`} /><b>{timed?duration(heldMs):value===null?'未评估':`${value}%`}</b></div>})}</section>
     <section className="improvement"><small>最需改进 · {title}</small><p>{advice}</p></section>
-    <Replay ids={draft.replayIds} />
+    <RepDetails sessions={draft.sessions}/><Replay ids={draft.replayIds} />
     {error&&<p className="error" role="alert">{error}</p>}
     {!draft.sessions.length&&<p className="notice">本次尚未开始第一组，没有生成训练记录。</p>}
     <button className="primary-action" onClick={saved?onDone:onSave}>{saved?'完成，查看记录':'保存并完成'}</button>

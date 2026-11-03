@@ -16,6 +16,8 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
   const raf=useRef<number|null>(null),generation=useRef(0),starting=useRef(false),active=useRef(false)
   const buffer=useRef<ReplayBuffer|null>(null),draft=useRef<WorkoutDraft|null>(null),storedGroups=useRef(0),seenRecords=useRef(0)
   const pendingRules=useRef(new Set<string>()),persist=useRef(Promise.resolve()),finishQueued=useRef(false)
+  const [anchor,setAnchor]=useState<{x:number;y:number}|null>(null)
+  const [luminance,setLuminance]=useState<number|null>(null)
   const [view,setView]=useState<FlowView|null>(null),[loading,setLoading]=useState(false),[error,setError]=useState('')
   const [voiceEnabled,setVoiceEnabled]=useState(true),enabled=useRef(true),lastVoice=useRef({key:'',at:0})
   const [voiceStatus,setVoiceStatus]=useState('语音已开启'),[replayStatus,setReplayStatus]=useState('回放仅保存在本机')
@@ -110,11 +112,13 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
         try{
           if(!document.hidden&&video.readyState>=2&&video.currentTime!==lastFrame&&t-inferenceAt>=gap){
             lastFrame=video.currentTime;inferenceAt=t
-            if(lightCtx&&t-lastLight>1000){lightCtx.drawImage(video,0,0,32,24);const data=lightCtx.getImageData(0,0,32,24).data;let total=0;for(let i=0;i<data.length;i+=4)total+=data[i]*.2126+data[i+1]*.7152+data[i+2]*.0722;luminance=total/(32*24);lastLight=t}
+            if(lightCtx&&t-lastLight>1000){lightCtx.drawImage(video,0,0,32,24);const data=lightCtx.getImageData(0,0,32,24).data;let total=0;for(let i=0;i<data.length;i+=4)total+=data[i]*.2126+data[i+1]*.7152+data[i+2]*.0722;luminance=total/(32*24);lastLight=t;setLuminance(luminance)}
             const began=performance.now(),result=runtime.detectForVideo(video,t);gap=Math.max(90,Math.min(350,(performance.now()-began)*2.5))
             const raw=result.landmarks[0]??[],landmarks:Landmarks={}
             for(const [index,name] of Object.entries(MAP)){const p=raw[Number(index)];if(p)landmarks[name]={...p,z:0,visibility:p.visibility??1}}
             const next=flow.current!.frame(landmarks,t,video.videoWidth,video.videoHeight,luminance)
+            const joint=next.feedback.joints.map(i=>raw[i]).find(p=>p&&(p.visibility??1)>=.65)
+            setAnchor(joint?{x:(1-joint.x)*100,y:joint.y*100}:null)
             const canvas=canvasRef.current;if(canvas){if(canvas.width!==video.videoWidth||canvas.height!==video.videoHeight){canvas.width=video.videoWidth;canvas.height=video.videoHeight}const ctx=canvas.getContext('2d');if(ctx)drawSkeleton(ctx,raw,canvas.width,canvas.height,next.feedback);if(next.stage==='active')buffer.current?.capture(video,canvas,t)}
             publish(next,t)
           }
@@ -130,7 +134,7 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
     return()=>{clearInterval(timer);document.removeEventListener('visibilitychange',hide);teardown()}
   },[publish,teardown])
   const action=(fn:(f:WorkoutFlow,t:number)=>void)=>{const f=flow.current;if(!f)return;const t=performance.now();fn(f,t);publish(f.view(t),t)}
-  return {videoRef,canvasRef,audioRef,view,loading,error,voiceEnabled,voiceStatus,replayStatus,start,timerOnly:flow.current?.timerOnly??false,
+  return {videoRef,canvasRef,audioRef,view,loading,error,luminance,anchor,voiceEnabled,voiceStatus,replayStatus,start,timerOnly:flow.current?.timerOnly??false,
     toggleVoice:()=>{enabled.current=!enabled.current;setVoiceEnabled(enabled.current);announce(enabled.current?'on':'off',true)},testVoice:()=>announce('test',true),
     pause:()=>action((f,t)=>f.pause(t)),resume:()=>action(f=>f.resume()),manualStart:()=>action((f,t)=>f.manualStart(t)),skipRest:()=>action(f=>f.nextAfterRest()),finish:()=>action((f,t)=>f.finish(t)),clear:()=>{teardown();flow.current=null;setView(null)}}
 }

@@ -52,18 +52,23 @@ export const CONNECTIONS: Array<[number,number]>=[[11,12],[11,13],[13,15],[12,14
 export function drawSkeleton(ctx: CanvasRenderingContext2D, points: PoseDot[], width: number, height: number, feedback: VisualFeedback) {
   ctx.clearRect(0,0,width,height)
   ctx.lineCap='round';ctx.lineJoin='round'
-  const color=feedback.severity==='stop'?'#ff796d':feedback.severity==='caution'?'#ffc45c':feedback.severity==='good'?'#52e3a0':'#d5ddd7'
+  const color=feedback.severity==='stop'?'#E5483A':feedback.severity==='caution'?'#FFB020':feedback.severity==='good'?'#0E8F47':'#d5ddd7'
   for(const [a,b] of CONNECTIONS) {
     const p=points[a],q=points[b];if(!p||!q||(p.visibility??1)<.45||(q.visibility??1)<.45)continue
     ctx.beginPath();ctx.moveTo(p.x*width,p.y*height);ctx.lineTo(q.x*width,q.y*height)
     ctx.strokeStyle='rgba(0,15,10,.65)';ctx.lineWidth=Math.max(7,width/100);ctx.stroke()
-    ctx.strokeStyle=feedback.joints.length && !feedback.joints.includes(a) && !feedback.joints.includes(b)?'#52e3a0':color
+    ctx.strokeStyle=feedback.joints.length && !feedback.joints.includes(a) && !feedback.joints.includes(b)?'#0E8F47':color
     ctx.lineWidth=Math.max(3,width/210);ctx.stroke()
+  }
+  const joint=feedback.joints.map(i=>points[i]).find(p=>p&&(p.visibility??1)>=.65)
+  if(joint&&feedback.severity==='caution'){
+    const x=joint.x*width,y=joint.y*height,dx=x<width/2?45:-45;
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+dx,Math.min(height-12,y+35));ctx.strokeStyle='#FFB020';ctx.lineWidth=2;ctx.stroke()
   }
   for(let i=0;i<points.length;i++) {
     const p=points[i];if((p.visibility??1)<.45)continue
     ctx.beginPath();ctx.arc(p.x*width,p.y*height,Math.max(3,width/180),0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill()
-    if(feedback.joints.includes(i)){ctx.setLineDash([5,4]);ctx.beginPath();ctx.arc(p.x*width,p.y*height,Math.max(12,width/45),0,Math.PI*2);ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([])}
+    if(feedback.joints.includes(i)){ctx.setLineDash([]);ctx.beginPath();ctx.arc(p.x*width,p.y*height,Math.max(12,width/45),0,Math.PI*2);ctx.strokeStyle=color;ctx.lineWidth=4;ctx.stroke();ctx.setLineDash([])}
   }
 }
 

@@ -41,9 +41,9 @@ export default function CoachAppV2(){
     if(retry&&!retry.disabled)retry.click()
     else if(sync.kind!=='busy'){setPage('settings');const details=syncArea.current?.querySelector('details');if(details)details.open=true}
   }
-  const save=()=>{
+  const save=(destination:'train'|'history'='history')=>{
     if(!summary||saving.current)return;saving.current=true
-    try{setHistory(saveDraft(summary));setPending(null);setSummary(null);setSummarySaved(false);coach.clear();setPage('history');setSaveError('');window.scrollTo(0,0)}
+    try{setHistory(saveDraft(summary));setPending(null);setSummary(null);setSummarySaved(false);coach.clear();setPage(destination);setSaveError('');window.scrollTo(0,0)}
     catch{setSaveError('保存未完成，请保持本页并重试；已保存的组会按同一编号去重，不会重复增加。')}
     finally{saving.current=false}
   }
@@ -56,7 +56,7 @@ export default function CoachAppV2(){
   const ringTarget=view?.stage==='rest'?plan.restSeconds:view?.stage==='countdown'?3:plan.target
   const ringLabel=view?.stage==='rest'?'休息倒计时 · 秒':view?.stage==='countdown'?'准备倒计时 · 秒':timed?`目标 ${plan.target} 秒`:`${exercise==='squat'?'有效':'完成'} · 目标 ${plan.target}`
   const mutatePlan=(patch:Partial<TrainingPlan>)=>setPlanOverride({...plan,...patch})
-  return <main className={`app-shell v2 b2 ${running?'is-training':'is-idle'} ${summary?'summary-mode':''} ${['russian_twist','dumbbell_curl','pushup','reverse_crunch'].includes(exercise)?'upper-body-camera':''}`}>
+  return <main className={`app-shell v2 b2 ${running?'is-training':'is-idle'} ${summary?'summary-mode':''} ${['squat','russian_twist','dumbbell_curl','pushup','reverse_crunch'].includes(exercise)?'upper-body-camera':''}`}>
     <audio ref={coach.audioRef} preload="auto" src={`${import.meta.env.BASE_URL}voice/test.mp3`} />
     <header className="topbar" hidden={!!summary}>
       <>{running&&<button className="training-back" aria-label="返回并暂停训练" onClick={coach.pause}><Icon name="arrow"/></button>}<h1>{running?`${EXERCISE_NAMES[exercise]} · 第 ${view.group}/${plan.sets} 组`:<><small>本周 · {overview.weekDays} / {weeklyTarget} 天</small><span>{page==='train'?'今日训练':'AI 动作教练'}</span></>}</h1></>
@@ -71,16 +71,17 @@ export default function CoachAppV2(){
       <section className="settings-card"><h3>数据与隐私</h3><p>画面仅在本机识别，不会上传。回放只保留在当前浏览器；统计记录沿用原有云端同步。</p><button className="secondary" onClick={exportHistory} disabled={!history.length}><Icon name="export"/>导出全部训练记录</button><p>{QUALITY_NOTE}</p></section>
       {notice&&<p className="notice" role="status">{notice}</p>}
     </section>
-    {summary&&<WorkoutSummary draft={summary} history={history} saved={summarySaved} onSave={save} onDone={()=>{setSummary(null);coach.clear();setPage('history')}} error={saveError||coach.error}/>}
+    {summary&&<WorkoutSummary draft={summary} history={history} saved={summarySaved} onSave={()=>save()} onNext={()=>{if(summarySaved){setSummary(null);coach.clear();setPage('train');window.scrollTo(0,0)}else save('train')}} onDone={()=>{setSummary(null);coach.clear();setPage('history')}} error={saveError||coach.error}/>}
     {page==='history'&&!running&&!summary&&<TrainingHistory sessions={history} onSelect={openHistory} weeklyTarget={weeklyTarget}/>}
     <section className="training-page" hidden={page!=='train'||!!summary} aria-label="训练">
       {!running&&<>
+        <label className="exercise-switcher"><span>切换动作</span><select aria-label="切换动作" value={exercise} disabled={coach.loading} onChange={e=>choose(e.target.value as Exercise)}>{GROUPS.map(group=><optgroup key={group.name} label={group.name}>{group.exercises.map(kind=><option key={kind} value={kind}>{EXERCISE_NAMES[kind]}</option>)}</optgroup>)}</select></label>
         <WeekStrip history={history}/>
         {pending&&<div className="notice"><p>上次还有 {pending.sessions.length} 组总结待保存。</p><button onClick={()=>{setSummary(pending);setSummarySaved(false)}}>继续上次总结</button></div>}
-        <section className="recommendation" aria-label="今日建议"><p>今日建议</p><div className="suggestion-pose"><ExerciseIcon exercise={exercise}/></div><h3>{EXERCISE_NAMES[exercise]}</h3><div className="plan-amount">{plan.sets} × {plan.target} {timed?'秒':'次'}</div><p>上次标准率 {previousQuality===null?'未评估':previousQuality+'%'}<br/>今日目标 {timed?`每组保持 ${plan.target} 秒`:previousQuality===null?'先完成可控动作':`标准率 ${Math.min(95,previousQuality+5)}%`}</p><div className="camera-tags"><span>{angleLabel(exercise)}</span><span>{exercise==='russian_twist'?'拍清肩、髋和手即可':'距离以关键部位入镜为准'}</span><span>手机与腰同高</span></div><p className="rest-note">组间休息 {plan.restSeconds} 秒</p><div className="recommendation-bottom"><button className="recommendation-start" onClick={()=>begin()} disabled={coach.loading}>{coach.loading?'准备中':'开始训练'}</button></div>
+        <section className="recommendation" aria-label="今日建议"><p>今日建议</p><div className="suggestion-pose"><ExerciseIcon exercise={exercise}/></div><h3>{EXERCISE_NAMES[exercise]}</h3><div className="plan-amount">{plan.sets} × {plan.target} {timed?'秒':'次'}</div><p>上次标准率 {previousQuality===null?'未评估':previousQuality+'%'}<br/>今日目标 {timed?`每组保持 ${plan.target} 秒`:previousQuality===null?'先完成可控动作':`标准率 ${Math.min(95,previousQuality+5)}%`}</p><div className="camera-tags"><span>{angleLabel(exercise)}</span><span>{exercise==='russian_twist'?'拍清肩、髋和手即可':exercise==='squat'?'拍清同侧髋、膝和踝即可':'距离以关键部位入镜为准'}</span><span>手机与腰同高</span></div><p className="rest-note">组间休息 {plan.restSeconds} 秒</p><div className="recommendation-bottom"><button className="recommendation-start" onClick={()=>begin()} disabled={coach.loading}>{coach.loading?'准备中':'开始训练'}</button></div>
           <details className="plan-editor"><summary>调整计划</summary><div><label>组数<input disabled={coach.loading} type="number" min="1" max="10" value={plan.sets} onChange={e=>mutatePlan({sets:Math.max(1,Math.min(10,Number(e.target.value)||1))})}/></label><label>{timed?'每组秒数':'每组次数'}<input disabled={coach.loading} type="number" min={timed?10:1} max={timed?120:100} value={plan.target} onChange={e=>mutatePlan({target:Math.max(timed?10:1,Math.min(timed?120:100,Number(e.target.value)||1))})}/></label><label>休息秒数<input disabled={coach.loading} type="number" min="10" max="180" value={plan.restSeconds} onChange={e=>mutatePlan({restSeconds:Math.max(10,Math.min(180,Number(e.target.value)||10))})}/></label></div></details>
         </section>
-        <RecentExercises history={history} disabled={coach.loading} onSelect={kind=>{choose(kind);window.scrollTo({top:0,behavior:'smooth'})}}/><div className="exercise-groups"><h2>全部动作</h2>{GROUPS.map(group=><section key={group.name}><h3>{group.name}</h3>{group.exercises.map(kind=><button key={kind} className="exercise-row" aria-pressed={kind===exercise} disabled={coach.loading} onClick={()=>choose(kind)}><ExerciseIcon exercise={kind}/><strong>{EXERCISE_NAMES[kind]}</strong><span>{isTimedExercise(kind)?'计时':'计次'} · {kind==='russian_twist'?'正拍':'侧拍'}{kind==='dumbbell_curl'?' · 左右分别计':''}</span></button>)}</section>)}</div>
+        <RecentExercises history={history} disabled={coach.loading} onSelect={kind=>{choose(kind);window.scrollTo({top:0,behavior:'smooth'})}}/><div className="exercise-groups"><h2>全部动作</h2>{GROUPS.map(group=><section key={group.name}><h3>{group.name}</h3>{group.exercises.map(kind=><button key={kind} className="exercise-row" aria-pressed={kind===exercise} disabled={coach.loading} onClick={()=>{choose(kind);window.scrollTo({top:0,behavior:'smooth'})}}><ExerciseIcon exercise={kind}/><strong>{EXERCISE_NAMES[kind]}</strong><span>{isTimedExercise(kind)?'计时':'计次'} · {kind==='russian_twist'?'正拍':'侧拍'}{kind==='dumbbell_curl'?' · 左右分别计':''}</span></button>)}</section>)}</div>
         {exercise==='dumbbell_curl'&&<p className="history-note">每只手各计一次，双手一轮共两次。侧面略偏正，尽量让双臂都入镜；只看清一侧时只计该手。</p>}
         {exercise==='russian_twist'&&<p className="history-note">左一下计一次，右一下计一次，不合并为一对。</p>}
         {exercise==='wall_sit'&&<button className="timer-only-start" disabled={coach.loading} onClick={()=>begin(true)}>仅计时（无需摄像头）</button>}

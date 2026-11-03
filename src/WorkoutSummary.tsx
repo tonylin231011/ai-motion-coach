@@ -18,7 +18,7 @@ function Replay({ids}:{ids:string[]}){
   return <section className="replay-card"><button className="secondary" onClick={()=>clip?setPlaying(!playing):void load()}>{clip?playing?'暂停回放':'继续回放':'回放最需关注的片段'}</button><p className="history-note">仅本机 · 最长 12 秒 · 不上传 · 最多保留最近 10 段</p>{status&&<p role="status">{status}</p>}{clip&&urls[frame]&&<img className="local-replay" src={urls[frame]} alt="本机训练回放画面" />}</section>
 }
 
-export function WorkoutSummary({draft,history,onSave,onDone,saved=false,error=''}:{draft:WorkoutDraft;history:Session[];onSave:()=>void;onDone:()=>void;saved?:boolean;error?:string}){
+export function WorkoutSummary({draft,history,onSave,onDone,onNext,saved=false,error=''}:{draft:WorkoutDraft;history:Session[];onSave:()=>void;onDone:()=>void;onNext?:()=>void;saved?:boolean;error?:string}){
   const [shareStatus,setShareStatus]=useState(''),[shareUrl,setShareUrl]=useState('')
   const sharing=useRef(false)
   useEffect(()=>()=>{if(shareUrl)URL.revokeObjectURL(shareUrl)},[shareUrl])
@@ -52,6 +52,7 @@ export function WorkoutSummary({draft,history,onSave,onDone,saved=false,error=''
     }catch{setShareStatus('成果卡生成失败，请重试。')}finally{sharing.current=false}
   }
   return <section className="workout-summary" aria-label="训练总结"><header><p className="eyebrow">把进步，留在这里</p><h2>训练完成</h2><p>{EXERCISE_NAMES[draft.exercise]} · {draft.sessions.length} 组 · 用时 {duration(elapsed)}</p></header>
+    {onNext&&<button className="next-exercise-action" onClick={onNext}>{saved?'换个动作训练':draft.sessions.length?'保存并换动作':'返回选择动作'}</button>}
     <div className="summary-score"><p>可见动作标准率</p><strong>{q.percent===null?'—':q.percent}<small>{q.percent===null?'未评估':'%'}</small></strong><h3>{deltaLabel(q.percent,old)}</h3></div><div className="summary-totals"><div><strong>{timed?compactTime(held):total}</strong><span>{timed?'累计保持':draft.exercise==='squat'?'有效':'完成'}</span></div>{timed?<div><strong>{compactTime(Math.max(0,...draft.sessions.map(s=>s.hold?.bestMs??0)))}</strong><span>最长连续保持</span></div>:<div><strong>{attempts}</strong><span>尝试</span></div>}<div><strong>{draft.sessions.length}</strong><span>组数</span></div></div>
     <p className="history-note">标准率 = 姿态标准的时间或次数占比</p>
     {timed&&<section className="summary-sets posture-results"><h3>{posture.assessed?'有效保持':'未评估原因'}</h3>{posture.assessed?<><p>{compactTime(posture.good)} / {compactTime(held)}（{posture.percent}%）</p><p>最长连续标准保持 {compactTime(posture.best)}</p>{deviations.map(([name,value])=><p key={name}>{name}：{held?Math.round(value!.ms/held*100):0}% · {compactTime(value!.ms)}</p>)}</>:<p>全身关键点覆盖率 {posture.coverage}%（需达到70%），或缺少本机姿态统计。请侧拍，让头到脚完整入镜。</p>}</section>}

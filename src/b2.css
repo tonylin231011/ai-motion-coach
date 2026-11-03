@@ -146,9 +146,15 @@ button,.b2.is-training {user-select:none;-webkit-user-select:none;-webkit-touch-
 .hold-finish.hold-hint {animation:hold-shake .2s linear;}
 @keyframes hold-shake {25%,75%{transform:translateX(-3px)}50%{transform:translateX(3px)}}
 
-/* Keep close-range upper-body exercises uncropped; a blurred live backdrop fills the stage. */
+/* Keep counted exercises, including squat legs, uncropped; a blurred live backdrop fills the stage. */
 .b2 .camera-backdrop {display:none;}
 .b2.upper-body-camera.is-training .camera-backdrop {display:block;position:absolute;inset:-4%;width:108%;height:108%;object-fit:cover;transform:scaleX(-1);filter:blur(18px) brightness(.65);pointer-events:none;}
 .b2.upper-body-camera.is-training .camera-feed,.b2.upper-body-camera.is-training .skeleton-canvas {object-fit:contain;object-position:center;}
 .b2.is-training .camera-feed {z-index:1;}
 .b2 .stage-ready .secondary {font-size:12px;opacity:.8;}
+
+/* All seven actions stay within a single native picker, reachable while scrolling. */
+.b2 .exercise-switcher {position:sticky;top:8px;z-index:8;display:flex;align-items:center;gap:12px;padding:10px 14px;margin:0 0 14px;background:#fff;border:1px solid #dce4d7;border-radius:18px;box-shadow:0 3px 12px #10141112;}
+.b2 .exercise-switcher>span {font-size:14px;white-space:nowrap;color:#5A655E;}
+.b2 .exercise-switcher select {flex:1;min-width:0;min-height:44px;border:0;border-radius:12px;padding:8px;background:#eef3e8;color:#101411;font:inherit;font-weight:700;}
+.b2 .next-exercise-action {width:100%;min-height:48px;margin:0 0 16px;padding:12px;border:0;border-radius:16px;background:#101411;color:#C6FF3D;font-size:16px;font-weight:700;}

@@ -127,7 +127,7 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
             for(const [index,name] of Object.entries(MAP)){const p=raw[Number(index)];if(p)landmarks[name]={...p,z:0,visibility:p.visibility??1}}
             const controller=flow.current!,timed=exercise==='plank'||exercise==='wall_sit'
             const observation=posture(raw,exercise,video.videoWidth,video.videoHeight)
-            const viewport=video.parentElement!,fit=exercise==='russian_twist'||exercise==='dumbbell_curl'||exercise==='pushup'||exercise==='reverse_crunch'?Math.min:Math.max,scale=fit(viewport.clientWidth/video.videoWidth,viewport.clientHeight/video.videoHeight)
+            const viewport=video.parentElement!,fit=exercise==='squat'||exercise==='russian_twist'||exercise==='dumbbell_curl'||exercise==='pushup'||exercise==='reverse_crunch'?Math.min:Math.max,scale=fit(viewport.clientWidth/video.videoWidth,viewport.clientHeight/video.videoHeight)
             const dx=(video.videoWidth*scale-viewport.clientWidth)/2,dy=(video.videoHeight*scale-viewport.clientHeight)/2
             bodyReady.current=observation.visible
             setFraming(timed&&!bodyReady.current?'请后退，让全身入镜':'')

@@ -16,11 +16,13 @@ export function poseFeedback(exercise: Exercise, l: Landmarks, snapshot: SquatSn
   if (luminance !== null && luminance < 32) return {...result,key:'dark',text:'画面偏暗，请开灯或面向光源',severity:'caution'}
   if (!bodyVisible) return {...result,key:'no-person',text:'未检出人体，请进入镜头中央'}
   const torso=(['left','right'] as const).map(s=>[l[`${s}_shoulder`],l[`${s}_hip`]]).find(pair=>pair.every(good))
-  if ((exercise==='squat'||exercise==='wall_sit') && torso && Math.hypot((torso[0]!.x-torso[1]!.x)*width,(torso[0]!.y-torso[1]!.y)*height)>Math.min(width,height)*.7) return {...result,key:'near',text:'距离可能太近，请向后移动半步',severity:'caution'}
+  if (exercise==='wall_sit' && torso && Math.hypot((torso[0]!.x-torso[1]!.x)*width,(torso[0]!.y-torso[1]!.y)*height)>Math.min(width,height)*.7) return {...result,key:'near',text:'距离可能太近，请向后移动半步',severity:'caution'}
   const sides=(['left','right'] as const).map((s,i)=>({i,shoulder:l[`${s}_shoulder`],hip:l[`${s}_hip`],knee:l[`${s}_knee`],ankle:l[`${s}_ankle`],elbow:l[`${s}_elbow`],wrist:l[`${s}_wrist`]}))
   if (exercise==='squat' || exercise==='wall_sit') {
-    const side=sides.find(s=>[s.hip,s.knee,s.ankle].every(good))
-    if(!side) return {...result,key:'legs-cropped',text:'腿部未完整入镜，请拍到髋、膝盖和脚踝',severity:'caution',joints:[25,26,27,28]}
+    // Squat readiness uses the detector's actual in-frame bounds, not an extra margin or whole-body gate.
+    const legVisible=exercise==='squat'?(p:Point|undefined)=>!!p&&p.visibility>=.65&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1:good
+    const side=sides.find(s=>[s.hip,s.knee,s.ankle].every(legVisible))
+    if(!side) return {...result,key:'legs-cropped',text:exercise==='squat'?'请侧拍，调整手机角度拍清同一侧髋、膝和踝；头和手可不入镜':'腿部未完整入镜，请拍到髋、膝盖和脚踝',severity:'caution',joints:[25,26,27,28]}
     const kneeAngle=angle(side.hip!,side.knee!,side.ankle!,width,height)
     result.ready=exercise==='squat' ? kneeAngle>158 : snapshot.phase==='STANDING'
     result.depth=exercise==='squat' ? Math.max(0,Math.min(1,(180-kneeAngle)/100)) : null

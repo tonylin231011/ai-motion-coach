@@ -145,3 +145,10 @@ button,.b2.is-training {user-select:none;-webkit-user-select:none;-webkit-touch-
 .b2 .posture-results p {margin:10px 0;line-height:1.6;}
 .hold-finish.hold-hint {animation:hold-shake .2s linear;}
 @keyframes hold-shake {25%,75%{transform:translateX(-3px)}50%{transform:translateX(3px)}}
+
+/* Keep close-range upper-body exercises uncropped; a blurred live backdrop fills the stage. */
+.b2 .camera-backdrop {display:none;}
+.b2.upper-body-camera.is-training .camera-backdrop {display:block;position:absolute;inset:-4%;width:108%;height:108%;object-fit:cover;transform:scaleX(-1);filter:blur(18px) brightness(.65);pointer-events:none;}
+.b2.upper-body-camera.is-training .camera-feed,.b2.upper-body-camera.is-training .skeleton-canvas {object-fit:contain;object-position:center;}
+.b2.is-training .camera-feed {z-index:1;}
+.b2 .stage-ready .secondary {font-size:12px;opacity:.8;}

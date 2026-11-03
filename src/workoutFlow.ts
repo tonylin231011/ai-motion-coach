@@ -124,12 +124,13 @@ export class WorkoutFlow {
     if(fresh.bodyVisible)this.absentSince=null
     else this.absentSince??=t
     if(this.stage==='ready'||this.stage==='countdown'){
-      const points=Object.values(l).filter(p=>p.visibility>.65)
+      const readinessPoints=this.exercise==='russian_twist'?Object.fromEntries(Object.entries(l).filter(([key])=>key.endsWith('_shoulder')||key.endsWith('_hip'))):l
+      const points=Object.values(readinessPoints).filter(p=>p.visibility>.65)
       const center=points.length?{x:points.reduce((n,p)=>n+p.x,0)/points.length,y:points.reduce((n,p)=>n+p.y,0)/points.length}:null
-      const movement=this.previousPoints?Object.entries(l).some(([key,p])=>{const old=this.previousPoints![key as keyof Landmarks];return old&&old.visibility>.65&&p.visibility>.65&&Math.hypot(p.x-old.x,p.y-old.y)>.035}):true
+      const movement=this.previousPoints?Object.entries(readinessPoints).some(([key,p])=>{const old=this.previousPoints![key as keyof Landmarks];return old&&old.visibility>.65&&p.visibility>.65&&Math.hypot(p.x-old.x,p.y-old.y)>.035}):true
       const stable=center&&this.previousCenter&&!movement&&Math.hypot(center.x-this.previousCenter.x,center.y-this.previousCenter.y)<.035
       this.previousCenter=center
-      this.previousPoints=l
+      this.previousPoints=readinessPoints
       if(fresh.ready&&stable){this.preparationFrames.push({l,t,width,height});this.preparationFrames=this.preparationFrames.filter(f=>t-f.t<=900)}else this.preparationFrames=[]
       if(fresh.ready&&stable){this.stableSince??=t;if(this.stage==='ready'&&t-this.stableSince>=1200){this.stage='countdown';this.readyAt=t+3000;this.manualCountdown=false}}
       else if(!this.manualCountdown){this.stableSince=null;if(this.stage==='countdown')this.stage='ready'}

@@ -72,3 +72,20 @@ test('calendar streak and weekly goal count local days, not sets; seven-day mean
  const now=new Date(2026,10,2,20),session=day=>({id:`s-${day}`,exercise:'squat',endedAt:+new Date(2026,10,day,12),durationMs:1000,repCount:1,attemptCount:1,records:[{valid:true,issue:null,durationMs:2000,minAngle:90}]})
  const o=historyOverview([session(2),session(2),session(1)],now,3);assert.equal(o.streak,2);assert.equal(o.weekDays,1);assert.equal(o.recentQuality.percent,100)
 })
+
+test('close front-view twist starts automatically without legs, even when hands are already moving',()=>{
+ const f=new WorkoutFlow('russian_twist',{sets:2,target:20,restSeconds:1},false,()=>1,()=>crypto.randomUUID());let t=1000
+ const frame=(hand)=>({left_shoulder:point(.28,.1),right_shoulder:point(.72,.1),left_hip:point(.35,.72),right_hip:point(.65,.72),left_wrist:point(hand,.48)})
+ // Torso exceeds the old generic near threshold on a portrait sensor, but all needed joints are visible.
+ assert.notEqual(poseFeedback('russian_twist',frame(.4),{...sample,phase:'ASCENDING'},480,640,120).key,'near')
+ for(let i=0;i<65&&f.stage!=='active';i++){f.frame(frame(i%10<5?.2:.8),t+=100,480,640,120)}
+ assert.equal(f.stage,'active');assert.equal(f.view(t).snapshot.repCount,0,'preview twists never leak into live counts')
+ for(let i=0;i<30;i++)f.frame(frame(i%10<5?.2:.8),t+=100,480,640,120)
+ assert.ok(f.view(t).snapshot.repCount>0)
+})
+test('automatic twist countdown cancels if a required shoulder/hip/wrist disappears',()=>{
+ const f=new WorkoutFlow('russian_twist',{sets:1,target:20,restSeconds:1});let t=1000
+ const l={left_shoulder:point(.3,.2),left_hip:point(.35,.6),left_wrist:point(.4,.4)}
+ for(let i=0;i<20;i++)f.frame(l,t+=100,480,640,120)
+ assert.equal(f.stage,'countdown');f.frame({},t+=100,480,640,120);assert.equal(f.stage,'ready')
+})

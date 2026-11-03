@@ -16,7 +16,7 @@ export function poseFeedback(exercise: Exercise, l: Landmarks, snapshot: SquatSn
   if (luminance !== null && luminance < 32) return {...result,key:'dark',text:'画面偏暗，请开灯或面向光源',severity:'caution'}
   if (!bodyVisible) return {...result,key:'no-person',text:'未检出人体，请进入镜头中央'}
   const torso=(['left','right'] as const).map(s=>[l[`${s}_shoulder`],l[`${s}_hip`]]).find(pair=>pair.every(good))
-  if (torso && Math.hypot((torso[0]!.x-torso[1]!.x)*width,(torso[0]!.y-torso[1]!.y)*height)>Math.min(width,height)*.7) return {...result,key:'near',text:'距离可能太近，请向后移动半步',severity:'caution'}
+  if ((exercise==='squat'||exercise==='wall_sit') && torso && Math.hypot((torso[0]!.x-torso[1]!.x)*width,(torso[0]!.y-torso[1]!.y)*height)>Math.min(width,height)*.7) return {...result,key:'near',text:'距离可能太近，请向后移动半步',severity:'caution'}
   const sides=(['left','right'] as const).map((s,i)=>({i,shoulder:l[`${s}_shoulder`],hip:l[`${s}_hip`],knee:l[`${s}_knee`],ankle:l[`${s}_ankle`],elbow:l[`${s}_elbow`],wrist:l[`${s}_wrist`]}))
   if (exercise==='squat' || exercise==='wall_sit') {
     const side=sides.find(s=>[s.hip,s.knee,s.ankle].every(good))
@@ -38,6 +38,10 @@ export function poseFeedback(exercise: Exercise, l: Landmarks, snapshot: SquatSn
       const lean=Math.atan2(Math.abs(side.hip!.x-side.shoulder.x)*width,Math.max(1,torsoY))*180/Math.PI
       if(lean>60 && torsoY>height*.06) return {...result,key:'lean',text:'躯干前倾较大，先减小幅度、稳住身体',severity:'caution',joints:[11+side.i,23+side.i]}
     }
+  } else if (exercise==='russian_twist') {
+    const usable=(p:Point|undefined):p is Point=>!!p&&p.visibility>=.3&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1
+    result.ready=sides.some(s=>[s.shoulder,s.hip,s.wrist].every(usable))&&snapshot.confidence>0
+    if(!result.ready)return {...result,key:'twist-framing',text:'请正对镜头，拍清肩、髋和至少一只手；不需要拍到脚',severity:'neutral'}
   } else if (exercise==='dumbbell_curl') {
     result.ready=sides.some(s=>[s.shoulder,s.elbow,s.wrist].every(good) && angle(s.shoulder!,s.elbow!,s.wrist!,width,height)>145)
   } else result.ready=snapshot.confidence>0 && snapshot.phase==='STANDING'

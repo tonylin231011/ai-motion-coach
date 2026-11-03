@@ -70,6 +70,7 @@ export class WorkoutFlow {
     this.manualCountdown=false;this.stableSince=null;this.readyAt=0
   }
   resume(){if(this.stage!=='paused')return;this.stage='ready';this.preview=makeDetector(this.exercise,this.plan.target,this.timerOnly);this.previousCenter=null;this.previousPoints=null;this.preparationFrames=[];this.stableSince=null;this.absentSince=null}
+  continueActive(t:number){if(this.stage!=='paused')return;this.preparationFrames=[];this.begin(t);this.lastTick=t}
   manualStart(t:number){if(this.stage==='ready'){this.stage='countdown';this.readyAt=t+3000;this.manualCountdown=true}}
   nextAfterRest(){if(this.stage!=='rest')return;this.stage='ready';this.preview=makeDetector(this.exercise,this.plan.target,this.timerOnly);this.stableSince=null;this.previousCenter=null;this.previousPoints=null;this.preparationFrames=[];this.absentSince=null;this.hasStarted=false;this.snapshot=empty()}
   private begin(t:number){

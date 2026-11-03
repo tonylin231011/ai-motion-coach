@@ -32,7 +32,7 @@ for (const feature of ['dumbbell_curl', 'arm_reps', '导出全部训练记录', 
   assert.ok(code.includes(feature), `Feature missing: ${feature}`)
 }
 console.log('PASS training auto sync, wall sit, curl and history export feature markers')
-for (const feature of ['今日训练', '主导航', '长按结束', '按运动筛选', '每一次坚持，都有迹可循', 'camera-viewport', '今日建议', '保存并完成', 'motion-coach.workout-draft.v2', 'motion-coach-local-replays-v2', '画面仅在本机识别，不会上传']) {
+for (const feature of ['今日训练', '主导航', '结束本次训练？', '结束并保存', '完成并保存计划', '按运动筛选', '每一次坚持，都有迹可循', 'camera-viewport', '今日建议', '保存并完成', 'motion-coach.workout-draft.v2', 'motion-coach-local-replays-v2', '画面仅在本机识别，不会上传']) {
   assert.ok(code.includes(feature), `UI refresh missing: ${feature}`)
 }
 console.log('PASS light sage UI, navigation, uncropped camera and history screen markers')

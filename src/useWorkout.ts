@@ -1,3 +1,4 @@
+import { ConfirmationClock } from './trainingControls'
 import { posture, TimedPosture, savePosture } from './timedPosture'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Exercise, Landmarks } from './types'
@@ -13,6 +14,8 @@ type PoseRuntime={detectForVideo:(v:HTMLVideoElement,t:number)=>{landmarks:PoseD
 export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
   const backdropRef=useRef<HTMLVideoElement>(null),videoRef=useRef<HTMLVideoElement>(null),canvasRef=useRef<HTMLCanvasElement>(null),audioRef=useRef<HTMLAudioElement>(null)
   const callback=useRef(onDraft);callback.current=onDraft
+  const clock=useRef(new ConfirmationClock()),confirmationStage=useRef<FlowView['stage']|null>(null)
+  const now=()=>clock.current.now(performance.now())
   const flow=useRef<WorkoutFlow|null>(null),pose=useRef<PoseRuntime|null>(null),stream=useRef<MediaStream|null>(null)
   const raf=useRef<number|null>(null),generation=useRef(0),starting=useRef(false),active=useRef(false)
   const buffer=useRef<ReplayBuffer|null>(null),draft=useRef<WorkoutDraft|null>(null),storedGroups=useRef(0),seenRecords=useRef(0)
@@ -83,14 +86,15 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
     }
   },[announce,teardown])
   const init=(exercise:Exercise,plan:TrainingPlan,timerOnly:boolean)=>{
+    clock.current=new ConfirmationClock();confirmationStage.current=null
     flow.current=new WorkoutFlow(exercise,{...plan},timerOnly)
     draft.current={id:crypto.randomUUID(),exercise,plan:{...plan},sessions:[],createdAt:Date.now(),replayIds:[],ruleCounts:{}}
     storedGroups.current=0;seenRecords.current=0;pendingRules.current.clear();persist.current=Promise.resolve();finishQueued.current=false;spokenEvent.current='';countdownVoice.current=''
     assessment.current=new TimedPosture();bodyReady.current=false;setFraming('')
     active.current=true;setReplayStatus(timerOnly?'纯计时模式没有镜头回放':'回放仅保存在本机');setError('')
     if(!timerOnly)buffer.current=new ReplayBuffer()
-    if(timerOnly)flow.current.manualStart(performance.now())
-    setView(flow.current.view(performance.now()))
+    if(timerOnly)flow.current.manualStart(now())
+    setView(flow.current.view(now()))
   }
   const start=async(exercise:Exercise,plan:TrainingPlan,timerOnly=false)=>{
     if(starting.current||active.current)return
@@ -116,10 +120,11 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
       const lightCanvas=document.createElement('canvas');lightCanvas.width=32;lightCanvas.height=24
       const lightCtx=lightCanvas.getContext('2d',{willReadFrequently:true})
       let lastFrame=-1,inferenceAt=0,gap=90,lastLight=0,luminance:number|null=null
-      const loop=(t:number)=>{
+      const loop=(realTime:number)=>{
+        const t=clock.current.now(realTime)
         if(!active.current||token!==generation.current)return
         try{
-          if(!document.hidden&&video.readyState>=2&&video.currentTime!==lastFrame&&t-inferenceAt>=gap){
+          if(!clock.current.paused&&!document.hidden&&video.readyState>=2&&video.currentTime!==lastFrame&&t-inferenceAt>=gap){
             lastFrame=video.currentTime;inferenceAt=t
             if(lightCtx&&t-lastLight>1000){lightCtx.drawImage(video,0,0,32,24);const data=lightCtx.getImageData(0,0,32,24).data;let total=0;for(let i=0;i<data.length;i+=4)total+=data[i]*.2126+data[i+1]*.7152+data[i+2]*.0722;luminance=total/(32*24);lastLight=t;setLuminance(luminance)}
             const began=performance.now(),result=runtime.detectForVideo(video,t);gap=Math.max(90,Math.min(350,(performance.now()-began)*2.5))
@@ -146,13 +151,23 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
       raf.current=requestAnimationFrame(loop)
     }catch(e){teardown();setError(`启动失败：${e instanceof Error?e.message:'请检查相机权限'}`)}finally{starting.current=false;setLoading(false)}
   }
-  useEffect(()=>{const timer=setInterval(()=>{if(active.current&&flow.current){const t=performance.now();publish(flow.current.tick(t),t)}},200)
-    const hide=()=>{if(document.hidden&&active.current){flow.current?.pause(performance.now(),'切到后台，训练已暂停');audioRef.current?.pause()}}
+  useEffect(()=>{const timer=setInterval(()=>{if(active.current&&flow.current&&!clock.current.paused){const t=now();publish(flow.current.tick(t),t)}},200)
+    const hide=()=>{if(document.hidden&&active.current){flow.current?.pause(now(),'切到后台，训练已暂停');if(clock.current.paused)confirmationStage.current='paused';audioRef.current?.pause()}}
     document.addEventListener('visibilitychange',hide)
     return()=>{clearInterval(timer);document.removeEventListener('visibilitychange',hide);teardown()}
   },[publish,teardown])
-  const action=(fn:(f:WorkoutFlow,t:number)=>void)=>{const f=flow.current;if(!f)return;const t=performance.now();fn(f,t);publish(f.view(t),t)}
+  const action=(fn:(f:WorkoutFlow,t:number)=>void)=>{const f=flow.current;if(!f)return;const t=now();fn(f,t);publish(f.view(t),t)}
   return {backdropRef,videoRef,canvasRef,audioRef,view,loading,error,luminance,anchor,framing,voiceEnabled,voiceStatus,replayStatus,start,timerOnly:flow.current?.timerOnly??false,
     toggleVoice:()=>{enabled.current=!enabled.current;setVoiceEnabled(enabled.current);announce(enabled.current?'on':'off',true)},testVoice:()=>announce('test',true),
-    pause:()=>action((f,t)=>f.pause(t)),resume:()=>action(f=>f.resume()),manualStart:()=>{const f=flow.current;if(f&&!f.timerOnly&&(f.exercise==='plank'||f.exercise==='wall_sit')&&!bodyReady.current){setError('请后退，让全身入镜');return}action((f,t)=>f.manualStart(t))},skipRest:()=>action(f=>f.nextAfterRest()),finish:()=>action((f,t)=>f.finish(t)),clear:()=>{teardown();flow.current=null;setView(null)}}
+    openFinish:()=>{const f=flow.current;if(!f||clock.current.paused||f.stage==='summary')return;const t=clock.current.pause(performance.now());confirmationStage.current=f.stage;
+      // Counted movements cannot bridge an interrupted partial repetition; timed holds keep their current group on a frozen clock.
+      if(f.stage==='active'&&f.exercise!=='plank'&&f.exercise!=='wall_sit')f.pause(t);
+      else if(f.stage==='active')f.tick(t);
+      audioRef.current?.pause();assessment.current.pause();setView({...f.view(t),stage:'paused'});
+    },
+    cancelFinish:()=>{const f=flow.current;if(!f||!clock.current.paused)return;const stage=confirmationStage.current,t=clock.current.resume(performance.now());confirmationStage.current=null;
+      if(stage==='active'&&f.stage==='paused')f.continueActive(t);publish(f.view(t),t);
+    },
+    finishDescription:()=>{const f=flow.current;if(!f)return '';const all=[...f.sessions,f.view(now()).snapshot];return f.exercise==='plank'||f.exercise==='wall_sit'?`已保持 ${Math.floor(all.reduce((n,s)=>n+(s.hold?.heldMs??0),0)/1000)} 秒，结束后保存记录`:`已完成 ${all.reduce((n,s)=>n+s.repCount,0)} 次，结束后保存记录`},
+    pause:()=>action((f,t)=>f.pause(t)),resume:()=>action(f=>f.resume()),manualStart:()=>{const f=flow.current;if(f&&!f.timerOnly&&(f.exercise==='plank'||f.exercise==='wall_sit')&&!bodyReady.current){setError('请后退，让全身入镜');return}action((f,t)=>f.manualStart(t))},skipRest:()=>action(f=>f.nextAfterRest()),finish:()=>action((f,t)=>f.finish(t)),clear:()=>{teardown();clock.current=new ConfirmationClock();confirmationStage.current=null;flow.current=null;setView(null)}}
 }

@@ -25,7 +25,7 @@ try{
  await page.locator('.exercise-row').filter({hasText:'靠墙静蹲'}).click()
  await page.getByRole('button',{name:'仅计时（无需摄像头）'}).click()
  await page.locator('.live-status').filter({hasText:'正在训练'}).waitFor({timeout:6000})
- await page.waitForTimeout(1200);assert.equal(await page.locator('.attempt-reason').count(),0)
+ assert.equal(await page.locator('.training-metrics').count(),0);await page.screenshot({path:resolve('outputs/ui-v2-review/embedded-hold.png')});await page.waitForTimeout(1200);assert.equal(await page.locator('.attempt-reason').count(),0)
  await page.getByRole('button',{name:'暂停',exact:true}).click()
  const held=await page.locator('.hud-reps strong').innerText();await page.waitForTimeout(700);assert.equal(await page.locator('.hud-reps strong').innerText(),held)
  await page.getByRole('button',{name:'长按一秒结束训练'}).focus();await page.keyboard.down('Space');await page.waitForTimeout(1150);await page.keyboard.up('Space')

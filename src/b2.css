@@ -99,3 +99,30 @@ body { background:#F5F7F2; }
   .b2 .count-ring {width:112px;height:112px;padding:7px;border-width:4px;}
   .b2.is-training .hud-reps strong {font-size:48px;}
 }
+/* The camera owns the full stage; HUD and coaching float over it. */
+.b2.is-training .camera-stage {display:block;position:relative;isolation:isolate;}
+.b2.is-training .camera-viewport {position:absolute;inset:0;width:100%;height:100%;min-height:0;}
+.b2.is-training .camera-overlay-top {position:absolute;top:10px;left:10px;right:10px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0;background:transparent;z-index:4;pointer-events:none;}
+.b2 .camera-overlay-top .live-status {align-self:flex-start;background:#ffffffe8;border-radius:20px;padding:5px 9px;}
+.b2 .camera-overlay-top .training-hud {margin:0;gap:4px;}
+.b2 .count-ring {width:116px;height:116px;border-width:5px;padding:7px;}
+.b2.is-training .hud-reps strong {font-size:48px;letter-spacing:-2px;}
+.b2.is-training .hud-reps>span {max-width:88px;text-align:center;font-size:12px;line-height:1.25;}
+.b2 .camera-overlay-top .quality-strip {margin:2px 0 0;padding:5px;background:#ffffffb8;border-radius:8px;max-width:85%;}
+.b2 .camera-overlay-top .attempt-reason {margin:0;font-size:12px;background:#ffffffe8;}
+.b2 .arm-caption {background:#ffffffe8;border-radius:12px;padding:3px 8px;}
+.b2 .camera-overlay-bottom {position:absolute;bottom:0;left:0;right:0;display:block;background:#ffffffe8;padding:10px 14px;z-index:4;pointer-events:none;}
+.b2 .camera-overlay-bottom.cue-caution {background:#ffb020ed;}.b2 .camera-overlay-bottom.cue-stop {background:#ffe0dced;}
+.b2 .flow-overlay {padding:185px 20px 90px;background:#ffffff78;gap:10px;}
+.b2 .flow-overlay>p {background:#ffffffe0;border-radius:12px;padding:6px 10px;}
+.b2 .training-actions {margin-top:10px;}
+.b2 .training-actions button {min-width:0;white-space:nowrap;min-height:56px;}
+.b2 .hold-finish {display:flex;flex-direction:column;gap:2px;font-size:16px;line-height:1.2;padding:6px 10px;}
+.b2 .hold-finish span {font-size:12px;white-space:nowrap;}
+@media(orientation:landscape) and (max-height:550px){
+ .b2.is-training .camera-overlay-top {top:6px;gap:2px;}.b2 .count-ring {width:86px;height:86px;padding:5px;border-width:3px;}.b2.is-training .hud-reps strong {font-size:32px;}.b2 .camera-overlay-top .live-status {position:absolute;top:0;left:0;}.b2 .camera-overlay-bottom {padding:6px 12px;}.b2 .flow-overlay {padding:100px 12px 52px;gap:4px;}.b2 .flow-overlay>strong {font-size:20px;}.b2 .flow-overlay>p {font-size:12px;padding:2px 8px;}.b2 .flow-overlay button {min-height:44px;padding:5px 12px;}
+}
+@media(orientation:landscape) and (max-height:550px){.b2 .flow-overlay {left:auto;width:40%;padding:8px 8px 58px;justify-content:center;}.b2 .flow-overlay>p {max-width:100%;}.b2 .depth-meter {bottom:60px;}}
+@media(max-height:700px) and (orientation:portrait){.b2 .flow-overlay {padding:155px 12px 80px;gap:5px;}.b2 .flow-overlay>strong {font-size:20px;}.b2 .flow-overlay>p {font-size:12px;}}
+.b2 .depth-meter {bottom:85px;}
+.b2 .timer-only-message {z-index:2;background:#e6ece1;color:#101411;padding:160px 12px 90px;}.b2 .timer-only-message small {color:#5A655E;}.b2 .timer-only-message .exercise-icon {color:#101411;}

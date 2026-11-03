@@ -25,11 +25,11 @@ await context.route('https://v2-sync.example.test/**',async route=>{
 // Deterministic pose data at the model boundary, so real production detectors/flow/UI run.
 await context.route('**/assets/vision_bundle-*.js',route=>route.fulfill({contentType:'text/javascript',body:`
  export const FilesetResolver={forVisionTasks:async()=>({})};
- export const PoseLandmarker={createFromOptions:async()=>({close(){},detectForVideo(){
+ export const PoseLandmarker={createFromOptions:async()=>({close(){},detectForVideo(video){
   if(window.__poseMode==='absent')return {landmarks:[]};
   const p=Array.from({length:33},()=>({x:0,y:0,z:0,visibility:0})),r=window.__poseAngle*Math.PI/180;
   const put=(i,x,y)=>p[i]={x,y,z:0,visibility:.95};
-  put(11,.5+Math.sin(r)*.2*.75,.15);put(23,.5+Math.sin(r)*.2*.75,.5+Math.cos(r)*.2);put(25,.5,.5);put(27,.5,.7);
+  put(11,.5+Math.sin(r)*.2*(video.videoHeight/video.videoWidth),.15);put(23,.5+Math.sin(r)*.2*(video.videoHeight/video.videoWidth),.5+Math.cos(r)*.2);put(25,.5,.5);put(27,.5,.7);
   if(window.__poseMode==='cropped'){p[25].visibility=p[27].visibility=0;put(13,.5,.3);put(15,.5,.4)}
   return {landmarks:[p]};
  }})};`}))
@@ -68,7 +68,7 @@ try{
  await rep();await page.locator('.live-status').filter({hasText:'组间休息'}).waitFor()
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('motion-coach.sessions.v1')).length),35)
  pass('training: real detectors with fixture pose, 3-2-1, shallow reason, pause, 22px cues, light/cropping and rest')
- await page.getByRole('button',{name:'休息好了，准备下一组'}).click();await active()
+ assert.equal(await page.locator('.stage-rest > strong').count(),0);assert.match(await page.locator('.hud-reps').innerText(),/休息倒计时/);await page.screenshot({path:resolve(out,'embedded-rest.png')});await page.getByRole('button',{name:'休息好了，准备下一组'}).click();await active()
  await page.evaluate(()=>window.__poseMode='absent');await page.getByText('未看到人体超过 3 秒，已自动暂停',{exact:true}).waitFor({timeout:6500})
  await page.evaluate(()=>window.__poseMode='normal');await page.getByRole('button',{name:'继续',exact:true}).click();await active()
  await context.setOffline(true);await rep();await page.getByRole('region',{name:'训练总结'}).waitFor({timeout:5000})

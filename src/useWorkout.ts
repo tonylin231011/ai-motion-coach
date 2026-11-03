@@ -93,7 +93,8 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
     try{
       if(timerOnly){init(exercise,plan,true);return}
       if(!navigator.mediaDevices?.getUserMedia)throw Error('当前环境不能打开摄像头，请确认使用 HTTPS 并允许相机权限')
-      const incoming=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480},frameRate:{ideal:24,max:30}},audio:false})
+      const portrait=window.matchMedia('(orientation: portrait)').matches
+      const incoming=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:portrait?480:640},height:{ideal:portrait?640:480},aspectRatio:{ideal:portrait?3/4:4/3},frameRate:{ideal:24,max:30}},audio:false})
       if(token!==generation.current){incoming.getTracks().forEach(t=>t.stop());return}
       stream.current=incoming
       const video=videoRef.current;if(!video)throw Error('视频预览未就绪')

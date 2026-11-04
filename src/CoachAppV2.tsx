@@ -35,7 +35,7 @@ export default function CoachAppV2(){
   const [finishOpen,setFinishOpen]=useState(false)
   useEffect(()=>{const node=root.current;const prevent=(e:Event)=>{if(!(e.target instanceof Element&&e.target.closest('input,textarea,[contenteditable="true"]')))e.preventDefault()};node?.addEventListener('contextmenu',prevent);node?.addEventListener('selectstart',prevent);return()=>{node?.removeEventListener('contextmenu',prevent);node?.removeEventListener('selectstart',prevent)}},[])
   const syncArea=useRef<HTMLDivElement>(null),saving=useRef(false)
-  const plan=useMemo(()=>planOverride??loadPlan(exercise,recommendation(history,exercise)),[planOverride,history,exercise])
+  const plan=planOverride??loadPlan(exercise,recommendation(history,exercise))
   const previous=previousSession(history,exercise),previousQuality=previous?quality([previous]).percent:null
   const coach=useWorkout((draft,finished)=>{setPending(draft);if(finished){setFinishOpen(false);setSummary(draft);setSummarySaved(false);setSaveError('');if(finishRequested.current){finishRequested.current=false;try{setHistory(saveDraft(draft));setPending(null);setSummarySaved(true)}catch{setSaveError('保存未完成，请在总结页重试；已有记录会按编号去重。')}}window.scrollTo(0,0)}})
   const view=coach.view,running=!!view&&view.stage!=='summary',timed=isTimedExercise(exercise),sync=syncDisplay(syncStatus)
@@ -49,7 +49,7 @@ export default function CoachAppV2(){
   }
   const save=(destination:'train'|'history'='history')=>{
     if(!summary||saving.current)return;saving.current=true
-    try{setHistory(saveDraft(summary));setPending(null);setSummary(null);setSummarySaved(false);coach.clear();setPage(destination);setSaveError('');window.scrollTo(0,0)}
+    try{setHistory(saveDraft(summary));setPending(null);setSummary(null);setSummarySaved(false);coach.clear();setPage(destination);setPlanOverride(null);setSaveError('');window.scrollTo(0,0)}
     catch{setSaveError('保存未完成，请保持本页并重试；已保存的组会按同一编号去重，不会重复增加。')}
     finally{saving.current=false}
   }
@@ -76,7 +76,7 @@ export default function CoachAppV2(){
       <section className="settings-card"><h3>数据与隐私</h3><p>画面仅在本机识别，不会上传。回放只保留在当前浏览器；统计记录沿用原有云端同步。</p><button className="secondary" onClick={exportHistory} disabled={!history.length}><Icon name="export"/>导出全部训练记录</button><p>{QUALITY_NOTE}</p></section>
       {notice&&<p className="notice" role="status">{notice}</p>}
     </section>
-    {summary&&<WorkoutSummary draft={summary} history={history} saved={summarySaved} onSave={()=>save()} onNext={()=>{if(summarySaved){setSummary(null);coach.clear();setPage('train');window.scrollTo(0,0)}else save('train')}} onDone={()=>{setSummary(null);coach.clear();setPage('history')}} error={saveError||coach.error}/>}
+    {summary&&<WorkoutSummary draft={summary} history={history} saved={summarySaved} onSave={()=>save()} onNext={()=>{if(summarySaved){setSummary(null);setPlanOverride(null);coach.clear();setPage('train');window.scrollTo(0,0)}else save('train')}} onDone={()=>{setSummary(null);coach.clear();setPage('history')}} error={saveError||coach.error}/>}
     {page==='history'&&!running&&!summary&&<TrainingHistory sessions={history} onSelect={openHistory} weeklyTarget={weeklyTarget}/>}
     <section className="training-page" hidden={page!=='train'||!!summary} aria-label="训练">
       {!running&&<>

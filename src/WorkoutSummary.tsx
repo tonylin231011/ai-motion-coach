@@ -1,9 +1,7 @@
-import { compactTime, postureSummary } from './timedPosture'
-import { RepDetails } from './BrightUI'
+import { CoachReviewPanel } from './CoachReviewPanel'
 import { useEffect, useRef, useState } from 'react'
 import { EXERCISE_NAMES, isTimedExercise } from './types'
 import { duration, type Session } from './history'
-import { biggestIssue, deltaLabel, previousSession, quality } from './workoutMetrics'
 import { readReplay, type LocalReplay, type WorkoutDraft } from './localWorkout'
 
 function Replay({ids}:{ids:string[]}){
@@ -22,24 +20,13 @@ export function WorkoutSummary({draft,history,onSave,onDone,onNext,saved=false,e
   const [shareStatus,setShareStatus]=useState(''),[shareUrl,setShareUrl]=useState('')
   const sharing=useRef(false)
   useEffect(()=>()=>{if(shareUrl)URL.revokeObjectURL(shareUrl)},[shareUrl])
-  const rawQuality=quality(draft.sessions),previous=previousSession(history,draft.exercise,Math.min(...draft.sessions.map(s=>s.endedAt))),old=previous?quality([previous]).percent:null
-  const timed=isTimedExercise(draft.exercise),total=draft.sessions.reduce((n,s)=>n+s.repCount,0),attempts=draft.sessions.reduce((n,s)=>n+s.attemptCount,0)
-  const held=draft.sessions.reduce((n,s)=>n+(s.hold?.heldMs??0),0),elapsed=draft.sessions.reduce((n,s)=>n+s.durationMs,0)
-  const posture=postureSummary(draft.sessions.map(s=>s.id),held)
-  const q=timed?{percent:posture.percent}:rawQuality
-  const deviations=Object.entries(posture.issues).sort((a,b)=>(b[1]?.ms??0)-(a[1]?.ms??0))
-  const dominant=deviations[0],difference=held-(previous?.hold?.heldMs??held)
-  const timedAdvice=!posture.assessed?'画面没有拍到完整身体或本机没有姿态统计，请把手机放在侧面约2米外，让头到脚都入镜，再开始下一组。':dominant?`${Math.floor(dominant[1]!.firstMs/1000)}秒后出现${dominant[0]}，下一组可先以${Math.max(10,Math.floor(dominant[1]!.firstMs/1000)+30)}秒为目标；${dominant[0]==='塌腰'?'感觉腰在下沉时收紧腹部，不能保持时就休息':dominant[0]==='臀部过高'?'将臀部缓慢降低到肩、髋、踝接近一条直线':dominant[0]==='蹲得不够低'?'在舒适范围内缓慢下蹲，让膝角接近90度':'略微站高一点，让膝角接近90度'}。`:posture.percent===100?`${difference>0?`比上次多保持${Math.round(difference/1000)}秒。`:''}下一组可尝试${Math.round(held/Math.max(1,draft.sessions.length)/1000)+15}秒；疲劳时先重复本次时长。`:'部分时间未能完整观察或偏差未持续超过0.5秒，请保持侧拍全身入镜，下一组先重复本次时长。'
-  const issue=biggestIssue(draft.sessions)
-  const form=Object.entries(draft.ruleCounts).sort((a,b)=>b[1]-a[1])[0]
-  const formLabel=form&&form[1]>issue.count?(form[0]==='knees-in'?'膝盖方向':form[0]==='lean'?'躯干控制':null):null
-  const title=timed?'保持姿态':formLabel??issue.title
-  const advice=timed?timedAdvice:formLabel?`观察到 ${form[1]} 个动作出现${formLabel}提示。下次先控制动作，必要时降低训练量；仅评价画面可见部位。`:issue.text
+  const timed=isTimedExercise(draft.exercise),total=draft.sessions.reduce((n,s)=>n+s.repCount,0),held=draft.sessions.reduce((n,s)=>n+(s.hold?.heldMs??0),0),elapsed=draft.sessions.reduce((n,s)=>n+s.durationMs,0)
+  const q={percent:null as number|null}
   const share=async()=>{
     if(sharing.current)return;sharing.current=true
     try{
       const c=document.createElement('canvas');c.width=1080;c.height=1080;const ctx=c.getContext('2d')!;ctx.fillStyle='#C6FF3D';ctx.fillRect(0,0,1080,1080)
-      ctx.fillStyle='#101411';ctx.font='bold 44px sans-serif';ctx.fillText('AI 动作教练',80,100);ctx.fillStyle='#152c22';ctx.font='bold 66px sans-serif';ctx.fillText('每一次坚持，都算进步',80,240)
+      ctx.fillStyle='#101411';ctx.font='bold 44px sans-serif';ctx.fillText('AI 动作教练',80,100);ctx.fillStyle='#152c22';ctx.font='bold 66px sans-serif';ctx.fillText('本次训练记录',80,240)
       ctx.font='40px sans-serif';ctx.fillText(`${EXERCISE_NAMES[draft.exercise]} · ${draft.sessions.length} 组`,80,330)
       ctx.font='bold 120px sans-serif';ctx.fillStyle='#101411';ctx.fillText(timed?duration(held):`${total} 次`,80,520)
       ctx.font='36px sans-serif';ctx.fillStyle='#354b3e';ctx.fillText(timed?'累计保持':draft.exercise==='squat'?'有效次数':'完成次数',80,585)
@@ -53,12 +40,8 @@ export function WorkoutSummary({draft,history,onSave,onDone,onNext,saved=false,e
   }
   return <section className="workout-summary" aria-label="训练总结"><header><p className="eyebrow">把进步，留在这里</p><h2>训练完成</h2><p>{EXERCISE_NAMES[draft.exercise]} · {draft.sessions.length} 组 · 用时 {duration(elapsed)}</p></header>
     {onNext&&<button className="next-exercise-action" onClick={onNext}>{saved?'换个动作训练':draft.sessions.length?'保存并换动作':'返回选择动作'}</button>}
-    <div className="summary-score"><p>可见动作标准率</p><strong>{q.percent===null?'—':q.percent}<small>{q.percent===null?'未评估':'%'}</small></strong><h3>{deltaLabel(q.percent,old)}</h3></div><div className="summary-totals"><div><strong>{timed?compactTime(held):total}</strong><span>{timed?'累计保持':draft.exercise==='squat'?'有效':'完成'}</span></div>{timed?<div><strong>{compactTime(Math.max(0,...draft.sessions.map(s=>s.hold?.bestMs??0)))}</strong><span>最长连续保持</span></div>:<div><strong>{attempts}</strong><span>尝试</span></div>}<div><strong>{draft.sessions.length}</strong><span>组数</span></div></div>
-    <p className="history-note">标准率 = 姿态标准的时间或次数占比</p>
-    {timed&&<section className="summary-sets posture-results"><h3>{posture.assessed?'有效保持':'未评估原因'}</h3>{posture.assessed?<><p>{compactTime(posture.good)} / {compactTime(held)}（{posture.percent}%）</p><p>最长连续标准保持 {compactTime(posture.best)}</p>{deviations.map(([name,value])=><p key={name}>{name}：{held?Math.round(value!.ms/held*100):0}% · {compactTime(value!.ms)}</p>)}</>:<p>全身关键点覆盖率 {posture.coverage}%（需达到70%），或缺少本机姿态统计。请侧拍，让头到脚完整入镜。</p>}</section>}
-    <section className="summary-sets"><h3>{timed?'每组保持时长':'每组可见动作标准率'}</h3>{draft.sessions.map((s,i)=>{const value=quality([s]).percent,heldMs=s.hold?.heldMs??0;return <div key={s.id}><span>第 {i+1} 组</span><progress className={!timed&&value!==null&&value<85?'below-target':''} max={timed?Math.max(1,draft.plan.target)*1000:100} value={timed?heldMs:value??0} aria-label={`第${i+1}组${timed?`保持${duration(heldMs)}`:value===null?'未评估':`标准率${value}%`}`} /><b>{timed?compactTime(heldMs):value===null?'未评估':`${value}%`}</b></div>})}</section>
-    <section className="improvement"><small>最需改进 · {title}</small><p>{advice}</p></section>
-    <RepDetails sessions={draft.sessions}/><Replay ids={draft.replayIds} />
+    <CoachReviewPanel draft={draft} history={history}/>
+    <Replay ids={draft.replayIds} />
     {error&&<p className="error" role="alert">{error}</p>}
     {!draft.sessions.length&&<p className="notice">本次尚未开始第一组，没有生成训练记录。</p>}
     <button className="primary-action" onClick={saved?onDone:onSave}>{saved?'完成，查看记录':'保存并完成'}</button>

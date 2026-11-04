@@ -27,6 +27,7 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
   const [voiceStatus,setVoiceStatus]=useState('语音已开启'),[replayStatus,setReplayStatus]=useState('回放仅保存在本机')
   const assessment=useRef(new TimedPosture()),bodyReady=useRef(false)
   const [framing,setFraming]=useState('')
+  const [diagnostics,setDiagnostics]=useState({fps:0,detected:false,visible:0,lost:0,rotation:0})
   const countdownVoice=useRef('')
   const spokenEvent=useRef('')
   const announce=useCallback((key:string,force=false)=>{
@@ -119,7 +120,7 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
       pose.current=runtime;init(exercise,plan,false)
       const lightCanvas=document.createElement('canvas');lightCanvas.width=32;lightCanvas.height=24
       const lightCtx=lightCanvas.getContext('2d',{willReadFrequently:true})
-      let lastFrame=-1,inferenceAt=0,gap=90,lastLight=0,luminance:number|null=null
+      let lastFrame=-1,inferenceAt=0,gap=90,lastLight=0,luminance:number|null=null,previousInference=0,lostAt:number|null=null
       const loop=(realTime:number)=>{
         const t=clock.current.now(realTime)
         if(!active.current||token!==generation.current)return
@@ -134,11 +135,12 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
             const observation=posture(raw,exercise,video.videoWidth,video.videoHeight)
             const viewport=video.parentElement!,fit=exercise==='squat'||exercise==='russian_twist'||exercise==='dumbbell_curl'||exercise==='pushup'||exercise==='reverse_crunch'?Math.min:Math.max,scale=fit(viewport.clientWidth/video.videoWidth,viewport.clientHeight/video.videoHeight)
             const dx=(video.videoWidth*scale-viewport.clientWidth)/2,dy=(video.videoHeight*scale-viewport.clientHeight)/2
+            const detected=raw.some(p=>(p.visibility??0)>.3);if(detected)lostAt=null;else lostAt??=t
+            setDiagnostics({fps:previousInference?Math.round(1000/Math.max(1,t-previousInference)):0,detected,visible:raw.filter(p=>(p.visibility??0)>.5).length,lost:lostAt===null?0:(t-lostAt)/1000,rotation:0});previousInference=t
             bodyReady.current=observation.visible
-            setFraming(timed&&!bodyReady.current?'请后退，让全身入镜':'')
-            if(timed&&!bodyReady.current&&(controller.stage==='ready'||controller.stage==='countdown')){controller.pause(t);controller.resume()}
+            setFraming(detected?'':'没有看到人，请站进画面')
             const wasActive=controller.stage==='active',heldBefore=controller.view(t).snapshot.hold?.heldMs??0
-            const next=controller.frame(timed&&!bodyReady.current&&!wasActive?{}:landmarks,t,video.videoWidth,video.videoHeight,luminance)
+            const next=controller.frame(landmarks,t,video.videoWidth,video.videoHeight,luminance)
             if(timed&&wasActive){const held=controller.sessions.length>storedGroups.current?controller.sessions.at(-1)?.hold?.heldMs??heldBefore:next.snapshot.hold?.heldMs??heldBefore;assessment.current.sample(held,observation)}
             const joint=next.feedback.joints.map(i=>raw[i]).find(p=>p&&(p.visibility??1)>=.65)
             setAnchor(joint?{x:(viewport.clientWidth-(joint.x*video.videoWidth*scale-dx))/viewport.clientWidth*100,y:(joint.y*video.videoHeight*scale-dy)/viewport.clientHeight*100}:null)
@@ -157,7 +159,7 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
     return()=>{clearInterval(timer);document.removeEventListener('visibilitychange',hide);teardown()}
   },[publish,teardown])
   const action=(fn:(f:WorkoutFlow,t:number)=>void)=>{const f=flow.current;if(!f)return;const t=now();fn(f,t);publish(f.view(t),t)}
-  return {backdropRef,videoRef,canvasRef,audioRef,view,loading,error,luminance,anchor,framing,voiceEnabled,voiceStatus,replayStatus,start,timerOnly:flow.current?.timerOnly??false,
+  return {backdropRef,videoRef,canvasRef,audioRef,view,loading,error,luminance,anchor,framing,diagnostics,voiceEnabled,voiceStatus,replayStatus,start,timerOnly:flow.current?.timerOnly??false,
     toggleVoice:()=>{enabled.current=!enabled.current;setVoiceEnabled(enabled.current);announce(enabled.current?'on':'off',true)},testVoice:()=>announce('test',true),
     openFinish:()=>{const f=flow.current;if(!f||clock.current.paused||f.stage==='summary')return;const t=clock.current.pause(performance.now());confirmationStage.current=f.stage;
       // Counted movements cannot bridge an interrupted partial repetition; timed holds keep their current group on a frozen clock.
@@ -169,5 +171,5 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
       if(stage==='active'&&f.stage==='paused')f.continueActive(t);publish(f.view(t),t);
     },
     finishDescription:()=>{const f=flow.current;if(!f)return '';const all=[...f.sessions,f.view(now()).snapshot];return f.exercise==='plank'||f.exercise==='wall_sit'?`已保持 ${Math.floor(all.reduce((n,s)=>n+(s.hold?.heldMs??0),0)/1000)} 秒，结束后保存记录`:`已完成 ${all.reduce((n,s)=>n+s.repCount,0)} 次，结束后保存记录`},
-    pause:()=>action((f,t)=>f.pause(t)),resume:()=>action(f=>f.resume()),manualStart:()=>{const f=flow.current;if(f&&!f.timerOnly&&(f.exercise==='plank'||f.exercise==='wall_sit')&&!bodyReady.current){setError('请后退，让全身入镜');return}action((f,t)=>f.manualStart(t))},skipRest:()=>action(f=>f.nextAfterRest()),finish:()=>action((f,t)=>f.finish(t)),clear:()=>{teardown();clock.current=new ConfirmationClock();confirmationStage.current=null;flow.current=null;setView(null)}}
+    pause:()=>action((f,t)=>f.pause(t)),resume:()=>action(f=>f.resume()),manualStart:()=>action((f,t)=>f.manualStart(t)),skipRest:()=>action(f=>f.nextAfterRest()),finish:()=>action((f,t)=>f.finish(t)),clear:()=>{teardown();clock.current=new ConfirmationClock();confirmationStage.current=null;flow.current=null;setView(null)}}
 }

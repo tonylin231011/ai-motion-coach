@@ -13,16 +13,14 @@ export function poseFeedback(exercise: Exercise, l: Landmarks, snapshot: SquatSn
   const points=Object.values(l).filter(p=>p && p.visibility>=.4)
   const bodyVisible=points.length>=3
   const result: VisualFeedback={key:'observe',text:'保持可控节奏，按舒适范围完成',severity:bodyVisible?'good':'neutral',joints:[],bodyVisible,ready:false,depth:null}
-  if (luminance !== null && luminance < 32) return {...result,key:'dark',text:'画面偏暗，请开灯或面向光源',severity:'caution'}
-  if (!bodyVisible) return {...result,key:'no-person',text:'未检出人体，请进入镜头中央'}
-  const torso=(['left','right'] as const).map(s=>[l[`${s}_shoulder`],l[`${s}_hip`]]).find(pair=>pair.every(good))
-  if (exercise==='wall_sit' && torso && Math.hypot((torso[0]!.x-torso[1]!.x)*width,(torso[0]!.y-torso[1]!.y)*height)>Math.min(width,height)*.7) return {...result,key:'near',text:'距离可能太近，请向后移动半步',severity:'caution'}
+  if (!['squat','pushup','plank','wall_sit'].includes(exercise) && luminance !== null && luminance < 32) return {...result,key:'dark',text:'画面偏暗，请开灯或面向光源',severity:'caution'}
+  if (!bodyVisible) return {...result,key:'no-person',text:'没有看到人，请站进画面'}
   const sides=(['left','right'] as const).map((s,i)=>({i,shoulder:l[`${s}_shoulder`],hip:l[`${s}_hip`],knee:l[`${s}_knee`],ankle:l[`${s}_ankle`],elbow:l[`${s}_elbow`],wrist:l[`${s}_wrist`]}))
   if (exercise==='squat' || exercise==='wall_sit') {
     // Squat readiness uses the detector's actual in-frame bounds, not an extra margin or whole-body gate.
     const legVisible=exercise==='squat'?(p:Point|undefined)=>!!p&&p.visibility>=.65&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1:good
     const side=sides.find(s=>[s.hip,s.knee,s.ankle].every(legVisible))
-    if(!side) return {...result,key:'legs-cropped',text:exercise==='squat'?'请侧拍，调整手机角度拍清同一侧髋、膝和踝；头和手可不入镜':'腿部未完整入镜，请拍到髋、膝盖和脚踝',severity:'caution',joints:[25,26,27,28]}
+    if(!side) return {...result,key:'legs-cropped',text:'可随时点击开始；当前可见部位不足以判断动作幅度',severity:'caution',joints:[25,26,27,28]}
     const kneeAngle=angle(side.hip!,side.knee!,side.ankle!,width,height)
     result.ready=exercise==='squat' ? kneeAngle>158 : snapshot.phase==='STANDING'
     result.depth=exercise==='squat' ? Math.max(0,Math.min(1,(180-kneeAngle)/100)) : null
@@ -50,7 +48,7 @@ export function poseFeedback(exercise: Exercise, l: Landmarks, snapshot: SquatSn
   if(snapshot.cue==='shallow') return {...result,key:'shallow',text:exercise==='squat'?'这次深度不足，下次在舒适范围内下蹲':'这次幅度偏小，下次控制完整回程',severity:'caution',joints:exercise==='squat'?[25,26]:[13,14]}
   if(snapshot.cue==='fast') return {...result,key:'fast',text:'节奏有些快，放慢回程、保持控制',severity:'caution'}
   if(snapshot.cue==='sag' || snapshot.cue==='pike') return {...result,key:snapshot.cue,text:snapshot.cue==='sag'?'髋部有些下沉，调整到平稳支撑':'髋部抬得较高，调整到平稳支撑',severity:'caution',joints:[23,24]}
-  if(snapshot.confidence===0 && !result.ready) return {...result,key:'keypoints',text:exercise==='reverse_crunch'?'请侧拍肩、髋和膝，先把腿放远':'请拍清肩、肘和手腕，摆好起始姿势',severity:'neutral'}
+  if(snapshot.confidence===0 && !result.ready) return {...result,key:'keypoints',text:['squat','pushup','plank','wall_sit'].includes(exercise)?'可随时点击开始；暂未观察到完整动作周期':exercise==='reverse_crunch'?'请侧拍肩、髋和膝，先把腿放远':'请拍清肩、肘和手腕，摆好起始姿势',severity:'neutral'}
   return result
 }
 

@@ -43,7 +43,7 @@ test('manual wall timer preserves target, actual milliseconds, completed sets an
  assert.equal(s.hold.timerMode,'manual')
 })
 test('light, missing person and cropped legs have distinct guidance; squat has no generic distance gate',()=>{
- assert.equal(poseFeedback('squat',{},sample,1,1,10).key,'dark')
+ assert.equal(poseFeedback('squat',{},sample,1,1,10).key,'no-person')
  assert.equal(poseFeedback('squat',{},sample,1,1,120).key,'no-person')
  const cropped={left_shoulder:point(.4,.2),left_elbow:point(.4,.35),left_wrist:point(.4,.5)}
  assert.equal(poseFeedback('squat',cropped,sample,1,1,120).key,'legs-cropped')

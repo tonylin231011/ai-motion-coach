@@ -1,3 +1,4 @@
+import {localPoseSummary} from './localPoseSummary'
 import { CoachReviewPanel } from './CoachReviewPanel'
 import { useEffect, useRef, useState } from 'react'
 import { EXERCISE_NAMES, isTimedExercise } from './types'
@@ -21,7 +22,7 @@ export function WorkoutSummary({draft,history,onSave,onDone,onNext,saved=false,e
   const sharing=useRef(false)
   useEffect(()=>()=>{if(shareUrl)URL.revokeObjectURL(shareUrl)},[shareUrl])
   const timed=isTimedExercise(draft.exercise),total=draft.sessions.reduce((n,s)=>n+s.repCount,0),held=draft.sessions.reduce((n,s)=>n+(s.hold?.heldMs??0),0),elapsed=draft.sessions.reduce((n,s)=>n+s.durationMs,0)
-  const q={percent:null as number|null}
+  const poseScore=localPoseSummary(draft),q={percent:poseScore.percent}
   const share=async()=>{
     if(sharing.current)return;sharing.current=true
     try{
@@ -30,8 +31,8 @@ export function WorkoutSummary({draft,history,onSave,onDone,onNext,saved=false,e
       ctx.font='40px sans-serif';ctx.fillText(`${EXERCISE_NAMES[draft.exercise]} · ${draft.sessions.length} 组`,80,330)
       ctx.font='bold 120px sans-serif';ctx.fillStyle='#101411';ctx.fillText(timed?duration(held):`${total} 次`,80,520)
       ctx.font='36px sans-serif';ctx.fillStyle='#354b3e';ctx.fillText(timed?'累计保持':draft.exercise==='squat'?'有效次数':'完成次数',80,585)
-      ctx.fillText(`可见动作标准率：${q.percent===null?'未评估':q.percent+'%'}`,80,700);ctx.fillText(`训练用时：${duration(elapsed)}`,80,770)
-      ctx.font='26px sans-serif';ctx.fillText('仅评价可见幅度与节奏；静态保持不评分',80,930);ctx.fillText('成果卡不包含训练画面',80,975)
+      ctx.fillText(`${poseScore.metric||'姿态指标'}达标率：${q.percent===null?'未评估':q.percent+'%'}`,80,700);ctx.fillText(`训练用时：${duration(elapsed)}`,80,770)
+      ctx.font='26px sans-serif';ctx.fillText('仅评估已采集的局部3D指标，不代表整体动作质量',80,930);ctx.fillText('成果卡不包含训练画面',80,975)
       const blob=await new Promise<Blob>((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('生成失败')),'image/png'))
       const file=new File([blob],'训练成果.png',{type:'image/png'})
       if(navigator.canShare?.({files:[file]})){try{await navigator.share({files:[file],title:'我的训练成果'});setShareStatus('已打开系统分享');return}catch(e){if(e instanceof Error&&e.name==='AbortError'){setShareStatus('已取消分享');return}}}

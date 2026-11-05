@@ -1,3 +1,4 @@
+import {PoseScoring,savePoseScore} from './poseScoring'
 import { ConfirmationClock } from './trainingControls'
 import { posture, TimedPosture, savePosture } from './timedPosture'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -9,7 +10,7 @@ import { ReplayBuffer, storeDraft, storeReplay, type WorkoutDraft } from './loca
 
 const MAP: Record<number,keyof Landmarks>={11:'left_shoulder',12:'right_shoulder',13:'left_elbow',14:'right_elbow',15:'left_wrist',16:'right_wrist',23:'left_hip',24:'right_hip',25:'left_knee',26:'right_knee',27:'left_ankle',28:'right_ankle'}
 const prefix=(e:Exercise)=>e==='wall_sit'?'v18-wall':e==='dumbbell_curl'?'v17-curl':e==='russian_twist'?'v16-twist':e==='reverse_crunch'?'v15-crunch':e==='plank'?'v12-plank':e==='pushup'?'v8-push':'v5'
-type PoseRuntime={detectForVideo:(v:HTMLVideoElement,t:number)=>{landmarks:PoseDot[][]};close:()=>void}
+type PoseRuntime={detectForVideo:(v:HTMLVideoElement,t:number)=>{landmarks:PoseDot[][];worldLandmarks?:{x:number;y:number;z:number}[][]};close:()=>void}
 
 export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
   const backdropRef=useRef<HTMLVideoElement>(null),videoRef=useRef<HTMLVideoElement>(null),canvasRef=useRef<HTMLCanvasElement>(null),audioRef=useRef<HTMLAudioElement>(null)
@@ -25,6 +26,7 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
   const [view,setView]=useState<FlowView|null>(null),[loading,setLoading]=useState(false),[error,setError]=useState('')
   const [voiceEnabled,setVoiceEnabled]=useState(true),enabled=useRef(true),lastVoice=useRef({key:'',at:0})
   const [voiceStatus,setVoiceStatus]=useState('语音已开启'),[replayStatus,setReplayStatus]=useState('回放仅保存在本机')
+  const scoring=useRef<PoseScoring|null>(null),scoredRecords=useRef(0)
   const assessment=useRef(new TimedPosture()),bodyReady=useRef(false)
   const [framing,setFraming]=useState('')
   const [diagnostics,setDiagnostics]=useState({fps:0,detected:false,visible:0,lost:0,rotation:0})
@@ -67,9 +69,10 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
       if(key!==spokenEvent.current&&announce(`${prefix(controller.exercise)}-${next.snapshot.cue}`))spokenEvent.current=key
     }
     if(next.stage!=='countdown')countdownVoice.current=''
-    if(next.stage!=='active')assessment.current.pause()
+    if(next.stage!=='active'){assessment.current.pause();scoring.current?.pause()}
     if(completed){
       const session=controller.sessions.at(-1)!
+      if(scoring.current){try{savePoseScore(session.id,scoring.current.finish(session.hold?.heldMs??session.durationMs,session.records.length))}catch{setError('本机姿态评分未能保存，训练记录仍保留')}scoring.current=new PoseScoring(session.exercise);scoredRecords.current=0}
       if(session.exercise==='plank'||session.exercise==='wall_sit'){try{savePosture(session.id,{...assessment.current.report,totalMs:session.hold?.heldMs??0})}catch{setError('姿态统计未能保存在本机，训练时长仍保留')}assessment.current=new TimedPosture()}
       if(!buffer.current?.best)buffer.current?.consider(controller.currentId,0,6000,'本组保持片段（仅本机，姿势未评分）',t)
       const clip=buffer.current?.best
@@ -91,6 +94,7 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
     flow.current=new WorkoutFlow(exercise,{...plan},timerOnly)
     draft.current={id:crypto.randomUUID(),exercise,plan:{...plan},sessions:[],createdAt:Date.now(),replayIds:[],ruleCounts:{}}
     storedGroups.current=0;seenRecords.current=0;pendingRules.current.clear();persist.current=Promise.resolve();finishQueued.current=false;spokenEvent.current='';countdownVoice.current=''
+    scoring.current=new PoseScoring(exercise);scoredRecords.current=0
     assessment.current=new TimedPosture();bodyReady.current=false;setFraming('')
     active.current=true;setReplayStatus(timerOnly?'纯计时模式没有镜头回放':'回放仅保存在本机');setError('')
     if(!timerOnly)buffer.current=new ReplayBuffer()
@@ -140,7 +144,9 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
             bodyReady.current=observation.visible
             setFraming(detected?'':'没有看到人，请站进画面')
             const wasActive=controller.stage==='active',heldBefore=controller.view(t).snapshot.hold?.heldMs??0
+            if(wasActive)scoring.current?.sample(t,raw,result.worldLandmarks?.[0]??[])
             const next=controller.frame(landmarks,t,video.videoWidth,video.videoHeight,luminance)
+            if(wasActive){const rows=controller.sessions.length>storedGroups.current?controller.sessions.at(-1)!.records:controller.latestRecords();while(scoredRecords.current<rows.length){scoredRecords.current++;scoring.current?.rep(scoredRecords.current)}}
             if(timed&&wasActive){const held=controller.sessions.length>storedGroups.current?controller.sessions.at(-1)?.hold?.heldMs??heldBefore:next.snapshot.hold?.heldMs??heldBefore;assessment.current.sample(held,observation)}
             const joint=next.feedback.joints.map(i=>raw[i]).find(p=>p&&(p.visibility??1)>=.65)
             setAnchor(joint?{x:(viewport.clientWidth-(joint.x*video.videoWidth*scale-dx))/viewport.clientWidth*100,y:(joint.y*video.videoHeight*scale-dy)/viewport.clientHeight*100}:null)
@@ -165,7 +171,7 @@ export function useWorkout(onDraft:(draft:WorkoutDraft,finished:boolean)=>void){
       // Counted movements cannot bridge an interrupted partial repetition; timed holds keep their current group on a frozen clock.
       if(f.stage==='active'&&f.exercise!=='plank'&&f.exercise!=='wall_sit')f.pause(t);
       else if(f.stage==='active')f.tick(t);
-      audioRef.current?.pause();assessment.current.pause();setView({...f.view(t),stage:'paused'});
+      audioRef.current?.pause();assessment.current.pause();scoring.current?.pause();setView({...f.view(t),stage:'paused'});
     },
     cancelFinish:()=>{const f=flow.current;if(!f||!clock.current.paused)return;const stage=confirmationStage.current,t=clock.current.resume(performance.now());confirmationStage.current=null;
       if(stage==='active'&&f.stage==='paused')f.continueActive(t);publish(f.view(t),t);

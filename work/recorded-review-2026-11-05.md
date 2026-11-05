@@ -15,3 +15,5 @@ UI：顶部青柠卡在无可信姿态分时显示实际次数或秒数与首条
 发布范围：仅ai-motion-coach子目录；资源先上传、SHA256核对、入口后上传、全量资源验证、根目录前后SHA256对照。手机入口 ?v=recorded-review-20261105。不清除浏览器数据。
 
 实际状态：本地测试与构建完成；CloudBase凭据失效，官方device授权待用户完成。尚未上传本次资源或切换线上入口，不宣称发布成功。
+
+发布完成：本人完成CloudBase官方CLI重新授权后，3个资源上传并逐字节校验，index入口随后切换。work/verify-deployment.mjs全量通过，根目录工作看板SHA256未变。代码71a4e6b，发布入口 ?v=recorded-review-20261105。
